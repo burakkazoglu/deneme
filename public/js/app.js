@@ -211,7 +211,6 @@ const chipOptions = document.querySelectorAll('.chip-option');
 const categoryModal = document.getElementById('categoryModal');
 const activeCategoryList = document.getElementById('activeCategoryList');
 const inactiveCategoryList = document.getElementById('inactiveCategoryList');
-const categorySearch = document.getElementById('categorySearch');
 const addCategoryButton = document.getElementById('addCategoryButton');
 const newCategoryName = document.getElementById('newCategoryName');
 const newCategoryColor = document.getElementById('newCategoryColor');
@@ -257,10 +256,12 @@ const renderCategoryList = (listElement, categories, isActive) => {
     item.draggable = true;
     item.dataset.id = category.id;
     item.innerHTML = `
-      <span class="category-dot" style="background:${category.color}"></span>
-      <span class="category-name">${category.name}</span>
-      <span class="category-count">${category.influencerCount || 0}</span>
-      <button type="button" class="ghost category-move" data-target="${isActive ? 'inactive' : 'active'}">
+      <div class="category-info">
+        <span class="category-dot" style="background:${category.color}"></span>
+        <span class="category-name">${category.name}</span>
+        <span class="category-count">${category.influencerCount || 0}</span>
+      </div>
+      <button type="button" class="ghost small category-move" data-target="${isActive ? 'inactive' : 'active'}">
         ${isActive ? 'Pasife Al' : 'Aktife Al'}
       </button>
     `;
@@ -269,19 +270,15 @@ const renderCategoryList = (listElement, categories, isActive) => {
 };
 
 const filterCategories = () => {
-  const query = categorySearch ? categorySearch.value.toLowerCase() : '';
-  const filtered = categoryState.filter((category) =>
-    category.name.toLowerCase().includes(query)
-  );
-  const active = filtered.filter((category) => category.isActive);
-  const inactive = filtered.filter((category) => !category.isActive);
+  const active = categoryState.filter((category) => category.isActive);
+  const inactive = categoryState.filter((category) => !category.isActive);
   if (activeCategoryList) renderCategoryList(activeCategoryList, active, true);
   if (inactiveCategoryList) renderCategoryList(inactiveCategoryList, inactive, false);
 };
 
 const loadCategories = async () => {
   if (!categoryModal) return;
-  const response = await fetch('/categories');
+  const response = await fetch('/api/categories');
   const data = await response.json();
   categoryState = data;
   originalCategoryState = data.map((item) => ({ ...item }));
@@ -338,16 +335,12 @@ if (categoryModal) {
   categoryModal.addEventListener('click', handleCategoryMoveClick);
 }
 
-if (categorySearch) {
-  categorySearch.addEventListener('input', filterCategories);
-}
-
 if (addCategoryButton) {
   addCategoryButton.addEventListener('click', async () => {
     const name = newCategoryName.value.trim();
     if (!name) return;
     const color = newCategoryColor.value || '#3B82F6';
-    const response = await fetch('/categories', {
+    const response = await fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, color })
@@ -369,14 +362,12 @@ if (addCategoryButton) {
 
 if (saveCategoryChanges) {
   saveCategoryChanges.addEventListener('click', async () => {
-    const updates = categoryState.map((category) => ({
-      id: category.id,
-      isActive: category.isActive
-    }));
-    await fetch('/categories/bulk', {
+    const activateIds = categoryState.filter((category) => category.isActive).map((category) => category.id);
+    const deactivateIds = categoryState.filter((category) => !category.isActive).map((category) => category.id);
+    await fetch('/api/categories/bulk', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ updates })
+      body: JSON.stringify({ activateIds, deactivateIds })
     });
     originalCategoryState = categoryState.map((item) => ({ ...item }));
     if (categoryModal) categoryModal.classList.remove('is-open');

@@ -374,7 +374,7 @@ app.post('/influencers/manage/:id/delete', ensureAuth, ensurePermission('influen
   res.redirect('/influencers/manage');
 });
 
-app.get('/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+app.get('/api/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   const categories = await Category.find().sort({ name: 1 });
   const influencers = await User.find({ role: 'influencer' });
   const withCounts = categories.map((category) => ({
@@ -387,7 +387,7 @@ app.get('/categories', ensureAuth, ensurePermission('influencerManage'), async (
   res.json(withCounts);
 });
 
-app.post('/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+app.post('/api/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   const { name, color } = req.body;
   const trimmed = name ? name.trim() : '';
   if (!trimmed) {
@@ -401,7 +401,25 @@ app.post('/categories', ensureAuth, ensurePermission('influencerManage'), async 
   return res.json({ id: category._id, name: category.name, color: category.color, isActive: category.isActive });
 });
 
-app.patch('/categories/:id', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+app.patch('/api/categories/bulk', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const { activateIds, deactivateIds } = req.body;
+  const activateList = Array.isArray(activateIds) ? activateIds : [];
+  const deactivateList = Array.isArray(deactivateIds) ? deactivateIds : [];
+  const bulkOps = [
+    ...activateList.map((id) => ({
+      updateOne: { filter: { _id: id }, update: { isActive: true } }
+    })),
+    ...deactivateList.map((id) => ({
+      updateOne: { filter: { _id: id }, update: { isActive: false } }
+    }))
+  ];
+  if (bulkOps.length > 0) {
+    await Category.bulkWrite(bulkOps);
+  }
+  return res.json({ success: true });
+});
+
+app.patch('/api/categories/:id', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   const { isActive } = req.body;
   const category = await Category.findByIdAndUpdate(
     req.params.id,
@@ -409,21 +427,6 @@ app.patch('/categories/:id', ensureAuth, ensurePermission('influencerManage'), a
     { new: true }
   );
   return res.json({ id: category._id, name: category.name, isActive: category.isActive });
-});
-
-app.patch('/categories/bulk', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
-  const { updates } = req.body;
-  if (!Array.isArray(updates)) {
-    return res.status(400).json({ error: 'Geçersiz güncelleme verisi.' });
-  }
-  const bulkOps = updates.map((item) => ({
-    updateOne: {
-      filter: { _id: item.id },
-      update: { isActive: Boolean(item.isActive) }
-    }
-  }));
-  await Category.bulkWrite(bulkOps);
-  return res.json({ success: true });
 });
 
 app.get('/content-plan', ensureAuth, ensurePermission('contentPlan'), (req, res) => {
@@ -455,7 +458,8 @@ app.post('/tasks/assign', ensureAuth, ensurePermission('tasks'), async (req, res
         title,
         taskType,
         status: 'bekliyor',
-        dueDate: dueDate ? new Date(dueDate) : undefined
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        completedAt: null
       }
     }
   });
@@ -468,9 +472,10 @@ app.post('/tasks/:userId/:taskId/status', ensureAuth, async (req, res) => {
   if (currentUser.role === 'influencer' && `${currentUser._id}` !== req.params.userId) {
     return res.status(403).render('not-authorized');
   }
+  const completedAt = status === 'tamamlandi' ? new Date() : null;
   await User.updateOne(
     { _id: req.params.userId, 'tasks._id': req.params.taskId },
-    { $set: { 'tasks.$.status': status } }
+    { $set: { 'tasks.$.status': status, 'tasks.$.completedAt': completedAt } }
   );
   res.redirect('/');
 });
@@ -536,7 +541,8 @@ app.get('/reports/dashboard', ensureAuth, ensurePermission('reporting'), async (
   const allTasks = influencers.flatMap((influencer) =>
     influencer.tasks.map((task) => ({
       ...task.toObject(),
-      influencerName: influencer.fullName
+      influencerName: influencer.fullName,
+      platforms: influencer.platforms || []
     }))
   );
 
@@ -546,13 +552,54 @@ app.get('/reports/dashboard', ensureAuth, ensurePermission('reporting'), async (
   ).length;
   const overdueTasks = allTasks.filter((task) => task.dueDate && task.dueDate < now && task.status !== 'tamamlandi')
     .length;
-  const avgCompletionDays = 4;
+  const completedTasks = allTasks.filter((task) => task.completedAt && task.createdAt);
+  const avgCompletionDays = completedTasks.length
+    ? Math.round(
+        completedTasks.reduce((sum, task) => sum + (task.completedAt - task.createdAt), 0) /
+          (completedTasks.length * 1000 * 60 * 60 * 24)
+      )
+    : 0;
+
+  const statusDistribution = [
+    { name: 'Bekliyor', value: allTasks.filter((task) => task.status === 'bekliyor').length },
+    { name: 'Devam Ediyor', value: allTasks.filter((task) => task.status === 'devam_ediyor').length },
+    { name: 'Duraklatıldı', value: allTasks.filter((task) => task.status === 'duraklatildi').length },
+    { name: 'Tamamlandı', value: allTasks.filter((task) => task.status === 'tamamlandi').length }
+  ];
+
+  const last14Days = Array.from({ length: 14 }).map((_, index) => {
+    const date = new Date(now);
+    date.setDate(now.getDate() - (13 - index));
+    const label = formatDate(date);
+    const count = allTasks.filter(
+      (task) => task.status === 'tamamlandi' && task.dueDate && formatDate(task.dueDate) === label
+    ).length;
+    return { date: label, count };
+  });
+
+  const platformNames = ['Instagram', 'TikTok', 'YouTube', 'X'];
+  const platformWorkload = platformNames.map((platform) => ({
+    platform,
+    count: allTasks.filter((task) => task.platforms.includes(platform)).length
+  }));
+
+  const influencerCounts = influencers
+    .map((influencer) => ({
+      influencer: influencer.fullName,
+      count: influencer.tasks.length
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
   res.render('reports-dashboard', {
     openTasks,
     doneThisWeek,
     overdueTasks,
-    avgCompletionDays
+    avgCompletionDays,
+    statusDistribution,
+    last14Days,
+    platformWorkload,
+    influencerCounts
   });
 });
 
