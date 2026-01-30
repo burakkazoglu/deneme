@@ -207,6 +207,7 @@ if (calendarElement && window.calendarTasks && window.FullCalendar) {
 
 const modalTriggers = document.querySelectorAll('[data-modal-target]');
 const modalCloseButtons = document.querySelectorAll('[data-modal-close]');
+const chipOptions = document.querySelectorAll('.chip-option');
 
 modalTriggers.forEach((trigger) => {
   trigger.addEventListener('click', () => {
@@ -223,6 +224,16 @@ modalCloseButtons.forEach((button) => {
     const modal = button.closest('.modal');
     if (modal) modal.classList.remove('is-open');
   });
+});
+
+chipOptions.forEach((option) => {
+  const input = option.querySelector('.chip-input');
+  if (!input) return;
+  const toggleSelected = () => {
+    option.classList.toggle('is-selected', input.checked);
+  };
+  toggleSelected();
+  input.addEventListener('change', toggleSelected);
 });
 
 const addTaskTypeButton = document.getElementById('addTaskType');

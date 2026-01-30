@@ -17,7 +17,7 @@
       </div>
       <button type="button" class="ghost" data-modal-target="categoryModal">Kategori Ekle</button>
     </div>
-    <form class="form-grid" action="/influencers/manage" method="POST">
+    <form class="form-grid form-grid--four" action="/influencers/manage" method="POST">
       <label>
         Ad Soyad
         <input type="text" name="fullName" required />
@@ -39,28 +39,32 @@
           <% }) %>
         </select>
       </label>
-      <fieldset class="permissions">
+      <fieldset class="permissions full-width">
         <legend>Platformlar</legend>
         <div class="platform-grid">
-          <label class="platform-option">
-            <input type="checkbox" name="platforms" value="Instagram" />
-            <span class="material-icons platform-icon">photo_camera</span>
-            Instagram
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="Instagram" class="chip-input" />
+            <span class="material-icons chip-icon">photo_camera</span>
+            <span>Instagram</span>
+            <span class="material-icons chip-check">check</span>
           </label>
-          <label class="platform-option">
-            <input type="checkbox" name="platforms" value="TikTok" />
-            <span class="material-icons platform-icon">music_note</span>
-            TikTok
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="TikTok" class="chip-input" />
+            <span class="material-icons chip-icon">music_note</span>
+            <span>TikTok</span>
+            <span class="material-icons chip-check">check</span>
           </label>
-          <label class="platform-option">
-            <input type="checkbox" name="platforms" value="YouTube" />
-            <span class="material-icons platform-icon">play_circle</span>
-            YouTube
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="YouTube" class="chip-input" />
+            <span class="material-icons chip-icon">play_circle</span>
+            <span>YouTube</span>
+            <span class="material-icons chip-check">check</span>
           </label>
-          <label class="platform-option">
-            <input type="checkbox" name="platforms" value="X" />
-            <span class="material-icons platform-icon">close</span>
-            X
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="X" class="chip-input" />
+            <span class="material-icons chip-icon">close</span>
+            <span>X</span>
+            <span class="material-icons chip-check">check</span>
           </label>
         </div>
       </fieldset>

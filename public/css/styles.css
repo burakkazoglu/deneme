@@ -19,26 +19,29 @@
 body {
   background: var(--bg);
   color: var(--primary);
+  margin: 0;
 }
 
 .app-shell {
-  display: grid;
-  grid-template-columns: 260px 1fr;
+  display: flex;
   min-height: 100vh;
 }
 
 .main-container {
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .appbar {
-  position: sticky;
+  position: fixed;
   top: 0;
   z-index: 15;
   background: #fff;
   border-bottom: 1px solid var(--border);
   box-shadow: 0 6px 12px rgba(15, 23, 42, 0.05);
+  left: 280px;
+  right: 0;
 }
 
 .appbar__content {
@@ -61,6 +64,10 @@ body {
   margin-left: auto;
 }
 
+.toolbar-spacer {
+  height: 64px;
+}
+
 .sidebar {
   background: var(--primary);
   color: #fff;
@@ -68,6 +75,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 280px;
+  position: fixed;
+  inset: 0 auto 0 0;
 }
 
 .sidebar__logo img {
@@ -149,7 +159,9 @@ body {
 }
 
 .main {
-  padding: 32px;
+  flex: 1;
+  margin-left: 280px;
+  padding: 24px;
 }
 
 .main__header {
@@ -211,6 +223,14 @@ body {
   align-items: end;
 }
 
+.form-grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
 label {
   display: flex;
   flex-direction: column;
@@ -218,21 +238,21 @@ label {
   font-weight: 500;
 }
 
-input,
-select {
+.main-container input,
+.main-container select {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
 }
 
-textarea {
+.main-container textarea {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   resize: vertical;
 }
 
-button {
+.main-container button {
   background: var(--accent);
   color: #fff;
   border: none;
@@ -242,17 +262,17 @@ button {
   font-weight: 600;
 }
 
-button.danger {
+.main-container button.danger {
   background: #ef4444;
 }
 
-button.ghost {
+.main-container button.ghost {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--primary);
 }
 
-button.success {
+.main-container button.success {
   background: #16a34a;
 }
 
@@ -418,6 +438,7 @@ button.success {
   gap: 24px;
   margin-bottom: 24px;
   align-items: start;
+  width: 100%;
 }
 
 .calendar-panel {
@@ -594,22 +615,44 @@ button.success {
 
 .platform-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
-.platform-option {
+.chip-option {
   display: flex;
   align-items: center;
   gap: 10px;
   background: #f8fafc;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.platform-icon {
+.chip-option.is-selected {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.5);
+  color: var(--primary);
+}
+
+.chip-input {
+  display: none;
+}
+
+.chip-icon {
   font-size: 18px;
+}
+
+.chip-check {
+  font-size: 18px;
+  opacity: 0;
+  margin-left: auto;
+}
+
+.chip-option.is-selected .chip-check {
+  opacity: 1;
 }
 
 .tooltip {
@@ -656,7 +699,7 @@ button.success {
 
 @media (max-width: 900px) {
   .app-shell {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .sidebar {
@@ -665,6 +708,7 @@ button.success {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 10;
+    width: 280px;
   }
 
   .sidebar.is-open {
@@ -677,6 +721,15 @@ button.success {
 
   .main {
     padding: 24px;
+    margin-left: 0;
+  }
+
+  .form-grid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .appbar {
+    left: 0;
   }
 
   .calendar-layout {
@@ -694,6 +747,10 @@ button.success {
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid--four {
     grid-template-columns: 1fr;
   }
 
