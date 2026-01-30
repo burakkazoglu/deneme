@@ -1,0 +1,164 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div class="header-title">
+      <h1>Raporlar Dashboard</h1>
+      <p>Genel performans özeti</p>
+    </div>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <h3>Açık Görevler</h3>
+      <p><strong><%= openTasks %></strong></p>
+    </div>
+    <div class="card">
+      <h3>Bu Hafta Tamamlanan</h3>
+      <p><strong><%= doneThisWeek %></strong></p>
+    </div>
+    <div class="card">
+      <h3>Geciken Görevler</h3>
+      <p><strong><%= overdueTasks %></strong></p>
+    </div>
+    <div class="card">
+      <h3>Ortalama Tamamlanma (gün)</h3>
+      <p><strong><%= avgCompletionDays %></strong></p>
+    </div>
+  </section>
+
+  <section class="panel grid-two">
+    <div class="chart-card">
+      <h3>Görev Durumu Dağılımı</h3>
+      <div class="chart-container" id="statusPie"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Son 14 Gün Tamamlanan Görev</h3>
+      <div class="chart-container" id="doneLine"></div>
+    </div>
+  </section>
+
+  <section class="panel grid-two">
+    <div class="chart-card">
+      <h3>Platform Bazlı İş Yükü</h3>
+      <div class="chart-container" id="platformBar"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Influencer Bazlı En Yoğun 5</h3>
+      <div class="chart-container" id="influencerBar"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Yaklaşan İşler</h2>
+        <p>Filtre: durum + tarih aralığı</p>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Başlık</th>
+            <th>Influencer</th>
+            <th>Atanan Kişi</th>
+            <th>Durum</th>
+            <th>Platform</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>--</td>
+            <td>Örnek Görev</td>
+            <td>Influencer Demo</td>
+            <td>Admin Kullanıcı</td>
+            <td>Bekliyor</td>
+            <td>Instagram</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts@2.12.2/umd/Recharts.min.js"></script>
+<script>
+  const statusDistribution = <%- JSON.stringify(statusDistribution || []) %>;
+  const last14Days = <%- JSON.stringify(last14Days || []) %>;
+  const platformWorkload = <%- JSON.stringify(platformWorkload || []) %>;
+  const influencerCounts = <%- JSON.stringify(influencerCounts || []) %>;
+
+  const {
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    LineChart,
+    Line,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    BarChart,
+    Bar
+  } = Recharts;
+
+  const COLORS = ['#f59e0b', '#3b82f6', '#ef4444', '#22c55e'];
+
+  const renderPie = () =>
+    React.createElement(
+      ResponsiveContainer,
+      { width: '100%', height: 240 },
+      React.createElement(
+        PieChart,
+        null,
+        React.createElement(
+          Pie,
+          { data: statusDistribution, dataKey: 'value', nameKey: 'name', outerRadius: 90 },
+          statusDistribution.map((entry, index) =>
+            React.createElement(Cell, { key: entry.name, fill: COLORS[index % COLORS.length] })
+          )
+        ),
+        React.createElement(Tooltip, null)
+      )
+    );
+
+  const renderLine = () =>
+    React.createElement(
+      ResponsiveContainer,
+      { width: '100%', height: 240 },
+      React.createElement(
+        LineChart,
+        { data: last14Days },
+        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+        React.createElement(XAxis, { dataKey: 'date' }),
+        React.createElement(YAxis, null),
+        React.createElement(Tooltip, null),
+        React.createElement(Line, { type: 'monotone', dataKey: 'count', stroke: '#2563eb' })
+      )
+    );
+
+  const renderBar = (data, keyLabel) =>
+    React.createElement(
+      ResponsiveContainer,
+      { width: '100%', height: 240 },
+      React.createElement(
+        BarChart,
+        { data },
+        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+        React.createElement(XAxis, { dataKey: keyLabel }),
+        React.createElement(YAxis, null),
+        React.createElement(Tooltip, null),
+        React.createElement(Bar, { dataKey: 'count', fill: '#22c55e' })
+      )
+    );
+
+  ReactDOM.createRoot(document.getElementById('statusPie')).render(renderPie());
+  ReactDOM.createRoot(document.getElementById('doneLine')).render(renderLine());
+  ReactDOM.createRoot(document.getElementById('platformBar')).render(renderBar(platformWorkload, 'platform'));
+  ReactDOM.createRoot(document.getElementById('influencerBar')).render(renderBar(influencerCounts, 'influencer'));
+</script>
+<%- include('partials/footer') %>
