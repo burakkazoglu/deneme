@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 mongoose.set('bufferCommands', false);
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/influencer_planner')
+  .connect(process.env.MONGODB_URI || 'mongodb://admin:12345Cs*@localhost:27017/influencer_planner?authSource=admin')
   .then(() => console.log('MongoDB connected'))
   .catch((error) => console.error('MongoDB connection error:', error));
 
@@ -49,7 +49,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/influencer_planner',
+      mongoUrl: process.env.MONGODB_URI || 'mongodb://admin:12345Cs*@localhost:27017/influencer_planner?authSource=admin',
       collectionName: 'sessions'
     }),
     cookie: {
