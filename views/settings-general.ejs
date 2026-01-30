@@ -11,11 +11,15 @@
 
   <section class="panel">
     <h2>Logo Ayarları</h2>
-    <form class="form-grid" action="/settings/general" method="POST">
+    <form class="form-grid" action="/settings/general" method="POST" enctype="multipart/form-data">
       <label>
-        Logo URL
-        <input type="text" name="logoUrl" value="<%= settings.logoUrl %>" required />
+        Logo Yükle
+        <input type="file" name="logoFile" accept="image/*" />
       </label>
+      <div class="logo-preview">
+        <p>Mevcut Logo</p>
+        <img src="<%= settings.logoUrl %>" alt="Mevcut Logo" />
+      </div>
       <label class="checkbox">
         <input type="checkbox" name="notificationsEnabled" <%= settings.notificationsEnabled ? 'checked' : '' %> />
         Bildirimler aktif olsun

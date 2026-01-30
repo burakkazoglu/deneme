@@ -5,7 +5,9 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const User = require('./models/User');
 const Settings = require('./models/Settings');
@@ -25,6 +27,22 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: uploadsDir,
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    cb(null, safeName);
+  }
+});
+
+const upload = multer({ storage });
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
@@ -42,6 +60,7 @@ app.use(
 
 const permissionMap = {
   influencers: '/influencers',
+  influencerManage: '/influencers/manage',
   contentPlan: '/content-plan',
   tasks: '/tasks',
   ideas: '/ideas',
@@ -65,7 +84,7 @@ const buildNav = (user) => {
       key: 'influencersGroup',
       children: [
         { label: 'Influencer Listesi', href: '/influencers', key: 'influencers' },
-        { label: 'Yeni Influencer Ekle/Çıkar', href: '/influencers', key: 'influencers' }
+        { label: 'Yeni Influencer Ekle/Çıkar', href: '/influencers/manage', key: 'influencerManage' }
       ]
     },
     {
@@ -78,7 +97,7 @@ const buildNav = (user) => {
       ]
     },
     {
-      label: 'Raporlama',
+      label: 'Raporlar',
       key: 'reportingGroup',
       children: [{ label: 'Performans', href: '/performance', key: 'reporting' }]
     },
@@ -124,9 +143,25 @@ const ensurePermission = (key) => (req, res, next) => {
   return res.status(403).render('not-authorized');
 };
 
+const formatDate = (date) => {
+  if (!date) return '-';
+  const day = `${date.getDate()}`.padStart(2, '0');
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+};
+
+const formatDateInput = (date) => {
+  if (!date) return '';
+  const day = `${date.getDate()}`.padStart(2, '0');
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+};
+
 const loadSessionData = async (req, res, next) => {
   res.locals.currentUser = null;
-  res.locals.settings = { logoUrl: '/public-logo.svg', notificationsEnabled: true };
+  res.locals.settings = { logoUrl: '/public-logo.svg', notificationsEnabled: true, taskTypes: [] };
   try {
     if (req.session.userId) {
       res.locals.currentUser = await User.findById(req.session.userId);
@@ -140,6 +175,8 @@ const loadSessionData = async (req, res, next) => {
     console.error('Settings load error:', error);
   }
   res.locals.navItems = buildNav(res.locals.currentUser);
+  res.locals.formatDate = formatDate;
+  res.locals.formatDateInput = formatDateInput;
   return next();
 };
 
@@ -165,9 +202,16 @@ const seedDefaultUsers = async () => {
       passwordHash: influencerPassword,
       role: 'influencer',
       permissions: ['home', 'tasks'],
+      category: 'Teknoloji',
+      platforms: ['Instagram', 'TikTok'],
       tasks: [
-        { title: 'Haftalık içerik planını incele', status: 'in_progress' },
-        { title: 'Yeni kampanya fikirleri gönder', status: 'pending' }
+        {
+          title: 'Haftalık içerik planını incele',
+          taskType: 'Hook İçerik',
+          status: 'in_progress',
+          dueDate: new Date()
+        },
+        { title: 'Yeni kampanya fikirleri gönder', taskType: 'Story', status: 'pending' }
       ]
     }
   ]);
@@ -208,7 +252,30 @@ app.post('/logout', (req, res) => {
 
 app.get('/', ensureAuth, async (req, res) => {
   const user = res.locals.currentUser;
-  res.render('dashboard', { user });
+  let calendarTasks = [];
+  if (user.role === 'admin' || user.role === 'staff') {
+    const influencers = await User.find({ role: 'influencer' });
+    calendarTasks = influencers.flatMap((influencer) =>
+      influencer.tasks.map((task) => ({
+        id: task._id,
+        title: task.title,
+        taskType: task.taskType || 'Görev',
+        status: task.status,
+        dueDate: task.dueDate,
+        influencer: influencer.fullName
+      }))
+    );
+  } else {
+    calendarTasks = user.tasks.map((task) => ({
+      id: task._id,
+      title: task.title,
+      taskType: task.taskType || 'Görev',
+      status: task.status,
+      dueDate: task.dueDate,
+      influencer: user.fullName
+    }));
+  }
+  res.render('dashboard', { user, calendarTasks });
 });
 
 app.get('/influencers', ensureAuth, ensurePermission('influencers'), async (req, res) => {
@@ -216,76 +283,163 @@ app.get('/influencers', ensureAuth, ensurePermission('influencers'), async (req,
   res.render('influencers', { influencers });
 });
 
-app.post('/influencers', ensureAuth, ensurePermission('influencers'), async (req, res) => {
-  const { fullName, email, password } = req.body;
+app.get('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const influencers = await User.find({ role: 'influencer' });
+  res.render('influencers-manage', { influencers });
+});
+
+app.post('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const { fullName, email, password, category, platforms } = req.body;
   const passwordHash = await bcrypt.hash(password, 10);
+  const platformList = Array.isArray(platforms) ? platforms : platforms ? [platforms] : [];
   await User.create({
     fullName,
     email,
     passwordHash,
     role: 'influencer',
-    permissions: ['home', 'tasks']
+    permissions: ['home', 'tasks'],
+    category,
+    platforms: platformList
   });
-  res.redirect('/influencers');
+  res.redirect('/influencers/manage');
 });
 
-app.post('/influencers/:id/delete', ensureAuth, ensurePermission('influencers'), async (req, res) => {
+app.post('/influencers/manage/:id/delete', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
-  res.redirect('/influencers');
-});
-
-app.post('/influencers/:id/tasks', ensureAuth, ensurePermission('influencers'), async (req, res) => {
-  const { title, dueDate } = req.body;
-  await User.findByIdAndUpdate(req.params.id, {
-    $push: {
-      tasks: {
-        title,
-        dueDate: dueDate ? new Date(dueDate) : undefined
-      }
-    }
-  });
-  res.redirect('/influencers');
+  res.redirect('/influencers/manage');
 });
 
 app.get('/content-plan', ensureAuth, ensurePermission('contentPlan'), (req, res) => {
   res.render('content-plan');
 });
 
-app.get('/tasks', ensureAuth, ensurePermission('tasks'), (req, res) => {
-  res.render('tasks');
+app.get('/tasks', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const influencers = await User.find({ role: 'influencer' });
+  const taskTypes = res.locals.settings.taskTypes || [];
+  const allTasks = influencers.flatMap((influencer) =>
+    influencer.tasks.map((task) => ({
+      id: task._id,
+      title: task.title,
+      taskType: task.taskType || 'Görev',
+      status: task.status,
+      dueDate: task.dueDate,
+      influencerId: influencer._id,
+      influencerName: influencer.fullName
+    }))
+  );
+  res.render('tasks', { influencers, taskTypes, allTasks });
+});
+
+app.post('/tasks/assign', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const { title, taskType, influencerId, dueDate } = req.body;
+  await User.findByIdAndUpdate(influencerId, {
+    $push: {
+      tasks: {
+        title,
+        taskType,
+        dueDate: dueDate ? new Date(dueDate) : undefined
+      }
+    }
+  });
+  res.redirect('/tasks');
+});
+
+app.post('/tasks/:userId/:taskId/status', ensureAuth, async (req, res) => {
+  const { status } = req.body;
+  const currentUser = res.locals.currentUser;
+  if (currentUser.role === 'influencer' && `${currentUser._id}` !== req.params.userId) {
+    return res.status(403).render('not-authorized');
+  }
+  await User.updateOne(
+    { _id: req.params.userId, 'tasks._id': req.params.taskId },
+    { $set: { 'tasks.$.status': status } }
+  );
+  res.redirect('/');
+});
+
+app.post('/tasks/types', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const { taskTypes } = req.body;
+  const list = Array.isArray(taskTypes) ? taskTypes : taskTypes ? [taskTypes] : [];
+  const sanitized = list.map((item) => item.trim()).filter(Boolean);
+  await Settings.findOneAndUpdate({}, { taskTypes: sanitized }, { upsert: true });
+  res.redirect('/tasks');
 });
 
 app.get('/ideas', ensureAuth, ensurePermission('ideas'), (req, res) => {
   res.render('ideas');
 });
 
-app.get('/performance', ensureAuth, ensurePermission('reporting'), (req, res) => {
-  res.render('performance');
+app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, res) => {
+  const { month, year } = req.query;
+  const selectedMonth = month ? Number(month) : new Date().getMonth() + 1;
+  const selectedYear = year ? Number(year) : new Date().getFullYear();
+  const influencers = await User.find({ role: 'influencer' });
+
+  const monthlyTasks = influencers.map((influencer) => {
+    const tasks = influencer.tasks.filter((task) => {
+      if (!task.dueDate) return false;
+      return (
+        task.dueDate.getMonth() + 1 === selectedMonth && task.dueDate.getFullYear() === selectedYear
+      );
+    });
+    return {
+      influencerName: influencer.fullName,
+      total: tasks.length,
+      done: tasks.filter((task) => task.status === 'done').length,
+      inProgress: tasks.filter((task) => task.status === 'in_progress').length
+    };
+  });
+
+  const yearlyTotal = influencers.reduce(
+    (sum, influencer) =>
+      sum +
+      influencer.tasks.filter(
+        (task) => task.dueDate && task.dueDate.getFullYear() === selectedYear
+      ).length,
+    0
+  );
+
+  res.render('performance', {
+    selectedMonth,
+    selectedYear,
+    monthlyTasks,
+    yearlyTotal
+  });
 });
 
 app.get('/settings/general', ensureAuth, ensurePermission('settings'), (req, res) => {
   res.render('settings-general');
 });
 
-app.post('/settings/general', ensureAuth, ensurePermission('settings'), async (req, res) => {
-  const { logoUrl, notificationsEnabled } = req.body;
-  await Settings.findOneAndUpdate(
-    {},
-    {
-      logoUrl,
+app.post(
+  '/settings/general',
+  ensureAuth,
+  ensurePermission('settings'),
+  upload.single('logoFile'),
+  async (req, res) => {
+    const { notificationsEnabled } = req.body;
+    const update = {
       notificationsEnabled: notificationsEnabled === 'on'
-    },
-    { upsert: true }
-  );
-  res.redirect('/settings/general');
-});
+    };
+    if (req.file) {
+      update.logoUrl = `/uploads/${req.file.filename}`;
+    }
+    await Settings.findOneAndUpdate({}, update, { upsert: true });
+    res.redirect('/settings/general');
+  }
+);
 
 app.get('/settings/users', ensureAuth, ensurePermission('settings'), async (req, res) => {
   const users = await User.find();
   res.render('settings-users', { users });
 });
 
-app.post('/settings/users', ensureAuth, ensurePermission('settings'), async (req, res) => {
+app.post('/settings/users/permissions', ensureAuth, ensurePermission('settings'), async (req, res) => {
+  const { fullName, email, password, role } = req.body;
+  res.render('settings-users-permissions', { fullName, email, password, role });
+});
+
+app.post('/settings/users/create', ensureAuth, ensurePermission('settings'), async (req, res) => {
   const { fullName, email, password, role, permissions } = req.body;
   const passwordHash = await bcrypt.hash(password, 10);
   const permissionList = Array.isArray(permissions) ? permissions : permissions ? [permissions] : [];

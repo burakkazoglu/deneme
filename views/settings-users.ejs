@@ -10,8 +10,9 @@
   </header>
 
   <section class="panel">
-    <h2>Yeni Kullanıcı Ekle</h2>
-    <form class="form-grid" action="/settings/users" method="POST">
+    <h2>Kullanıcı Oluştur</h2>
+    <p>Önce kullanıcı bilgilerini girin, sonra yetkileri seçin.</p>
+    <form class="form-grid" action="/settings/users/permissions" method="POST">
       <label>
         Ad Soyad
         <input type="text" name="fullName" required />
@@ -28,18 +29,10 @@
         Rol
         <select name="role" required>
           <option value="admin">Admin</option>
-          <option value="influencer">Influencer</option>
+          <option value="staff">Takım Üyesi</option>
         </select>
       </label>
-      <fieldset class="permissions">
-        <legend>Influencer Yetkileri</legend>
-        <label><input type="checkbox" name="permissions" value="influencers" /> Influencer Yönetimi</label>
-        <label><input type="checkbox" name="permissions" value="contentPlan" /> İçerik Planı</label>
-        <label><input type="checkbox" name="permissions" value="tasks" /> Görevler</label>
-        <label><input type="checkbox" name="permissions" value="ideas" /> Başlık / Post Fikirleri</label>
-        <label><input type="checkbox" name="permissions" value="reporting" /> Raporlama</label>
-      </fieldset>
-      <button type="submit">Kullanıcı Oluştur</button>
+      <button type="submit">Devam Et</button>
     </form>
   </section>
 

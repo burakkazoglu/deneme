@@ -9,19 +9,26 @@
     </div>
   </header>
 
-  <section class="cards">
-    <div class="card">
-      <h3>Planlanan İçerik</h3>
-      <p>Bu hafta 12 paylaşım planlandı.</p>
+  <section class="calendar-layout">
+    <div class="panel calendar-panel">
+      <div class="calendar-header">
+        <button class="calendar-nav" type="button" data-direction="prev">‹</button>
+        <div>
+          <h2 id="calendarTitle">Takvim</h2>
+          <p id="calendarSubtitle">Görev planı</p>
+        </div>
+        <button class="calendar-nav" type="button" data-direction="next">›</button>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
     </div>
-    <div class="card">
-      <h3>Aktif Influencer</h3>
-      <p>8 influencer aktif görevde.</p>
-    </div>
-    <div class="card">
-      <h3>Bekleyen Görev</h3>
-      <p>5 görev tamamlanmayı bekliyor.</p>
-    </div>
+
+    <aside class="panel calendar-detail">
+      <h2>Seçilen Gün Detayı</h2>
+      <div id="calendarDetailEmpty">
+        <p>Takvimden bir gün seçin.</p>
+      </div>
+      <div id="calendarDetailContent" class="calendar-detail__content"></div>
+    </aside>
   </section>
 
   <% if (user.role === 'influencer') { %>
@@ -32,13 +39,33 @@
           <li>Henüz atanmış görevin bulunmuyor.</li>
         <% } %>
         <% user.tasks.forEach((task) => { %>
-          <li>
-            <strong><%= task.title %></strong>
-            <span class="status status--<%= task.status %>"><%= task.status %></span>
+          <li class="task-item">
+            <div>
+              <strong><%= task.title %></strong>
+              <div class="task-meta"><%= task.taskType %> • <%= formatDate(task.dueDate) %></div>
+            </div>
+            <div class="task-actions">
+              <span class="status status--<%= task.status %>"><%= task.status %></span>
+              <form action="/tasks/<%= user._id %>/<%= task._id %>/status" method="POST" class="inline-form">
+                <input type="hidden" name="status" value="in_progress" />
+                <button type="submit">Başlat</button>
+              </form>
+              <form action="/tasks/<%= user._id %>/<%= task._id %>/status" method="POST" class="inline-form">
+                <input type="hidden" name="status" value="paused" />
+                <button type="submit" class="ghost">Durdur</button>
+              </form>
+              <form action="/tasks/<%= user._id %>/<%= task._id %>/status" method="POST" class="inline-form">
+                <input type="hidden" name="status" value="done" />
+                <button type="submit" class="success">Tamamlandı</button>
+              </form>
+            </div>
           </li>
         <% }) %>
       </ul>
     </section>
   <% } %>
 </main>
+<script>
+  window.calendarTasks = <%- JSON.stringify(calendarTasks || []) %>;
+</script>
 <%- include('partials/footer') %>
