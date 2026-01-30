@@ -18,6 +18,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.20",
     "@mui/material": "^5.15.20",
+    "framer-motion": "^11.0.17",
     "multer": "^1.4.5-lts.1",
     "mongoose": "^8.5.2"
   },

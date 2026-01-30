@@ -14,7 +14,7 @@
         <h2>Yeni Influencer Ekle</h2>
         <p>Profil bilgilerini doldurun.</p>
       </div>
-      <button type="button" class="ghost" data-modal-target="categoryModal">Kategori Yönetimi</button>
+      <button type="button" data-modal-target="categoryModal">Kategori Yönetimi</button>
     </div>
     <form class="form-grid form-grid--four" action="/influencers/manage" method="POST">
       <label>
@@ -31,7 +31,7 @@
       </label>
       <label>
         Kategori
-        <select name="category" required>
+        <select name="category" id="categorySelect" required>
           <option value="">Seçiniz</option>
           <% categories.forEach((category) => { %>
             <option value="<%= category.name %>"><%= category.name %></option>
@@ -109,6 +109,28 @@
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
       <div class="modal__body">
+        <div class="category-new-card">
+          <div class="category-new-header">
+            <h4>Yeni Kategori</h4>
+            <p>Yeni kategori ekleyin ve renk seçin.</p>
+          </div>
+          <div class="category-new-fields">
+            <label class="field">
+              Kategori adı
+              <input type="text" id="newCategoryName" placeholder="Örn: Yemek" required />
+              <span class="field-helper" id="newCategoryHelper"></span>
+            </label>
+            <div class="field color-field">
+              <span>Renk</span>
+              <div class="color-field__controls">
+                <span class="color-swatch" id="newCategoryColorPreview" style="background:#3B82F6"></span>
+                <button type="button" class="ghost" id="openColorPicker">Renk Seç</button>
+                <input type="hidden" id="newCategoryColor" value="#3B82F6" />
+              </div>
+            </div>
+            <button type="button" id="addCategoryButton">Ekle</button>
+          </div>
+        </div>
         <div class="category-transfer" id="categoryTransfer">
           <div class="category-panel">
             <h4>Aktif Kategoriler</h4>
@@ -119,16 +141,16 @@
             <div class="category-list" id="inactiveCategoryList"></div>
           </div>
         </div>
-        <div class="category-new">
-          <label>
-            Yeni kategori adı
-            <input type="text" id="newCategoryName" placeholder="Örn: Yemek" />
-          </label>
-          <label>
-            Renk (opsiyonel)
-            <input type="color" id="newCategoryColor" value="#3B82F6" />
-          </label>
-          <button type="button" class="ghost" id="addCategoryButton">Ekle</button>
+        <div class="color-picker-dialog" id="colorPickerDialog" aria-hidden="true">
+          <div class="color-picker-card">
+            <h4>Renk Seç</h4>
+            <input type="color" id="colorPickerInput" value="#3B82F6" />
+            <div class="color-picker-preview" id="colorPickerPreview" style="background:#3B82F6"></div>
+            <div class="color-picker-actions">
+              <button type="button" class="ghost" id="cancelColorPick">İptal</button>
+              <button type="button" id="saveColorPick">Kaydet</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal__footer">

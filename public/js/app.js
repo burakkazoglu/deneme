@@ -214,8 +214,17 @@ const inactiveCategoryList = document.getElementById('inactiveCategoryList');
 const addCategoryButton = document.getElementById('addCategoryButton');
 const newCategoryName = document.getElementById('newCategoryName');
 const newCategoryColor = document.getElementById('newCategoryColor');
+const newCategoryHelper = document.getElementById('newCategoryHelper');
+const newCategoryColorPreview = document.getElementById('newCategoryColorPreview');
+const openColorPicker = document.getElementById('openColorPicker');
+const colorPickerDialog = document.getElementById('colorPickerDialog');
+const colorPickerInput = document.getElementById('colorPickerInput');
+const colorPickerPreview = document.getElementById('colorPickerPreview');
+const saveColorPick = document.getElementById('saveColorPick');
+const cancelColorPick = document.getElementById('cancelColorPick');
 const saveCategoryChanges = document.getElementById('saveCategoryChanges');
 const cancelCategoryChanges = document.getElementById('cancelCategoryChanges');
+const categorySelect = document.getElementById('categorySelect');
 
 modalTriggers.forEach((trigger) => {
   trigger.addEventListener('click', () => {
@@ -247,6 +256,8 @@ chipOptions.forEach((option) => {
 
 let categoryState = [];
 let originalCategoryState = [];
+let activeCategoriesState = [];
+let draftCategoryColor = newCategoryColor ? newCategoryColor.value : '#3B82F6';
 
 const renderCategoryList = (listElement, categories, isActive) => {
   listElement.innerHTML = '';
@@ -282,7 +293,31 @@ const loadCategories = async () => {
   const data = await response.json();
   categoryState = data;
   originalCategoryState = data.map((item) => ({ ...item }));
+  if (newCategoryHelper) newCategoryHelper.textContent = '';
   filterCategories();
+};
+
+const renderCategoryOptions = (selectedName) => {
+  if (!categorySelect) return;
+  const currentValue = selectedName || categorySelect.value;
+  categorySelect.innerHTML = '<option value="">Seçiniz</option>';
+  activeCategoriesState.forEach((category) => {
+    const option = document.createElement('option');
+    option.value = category.name;
+    option.textContent = category.name;
+    categorySelect.appendChild(option);
+  });
+  if (currentValue) {
+    categorySelect.value = currentValue;
+  }
+};
+
+const refreshActiveCategories = async ({ selectedName } = {}) => {
+  if (!categorySelect) return;
+  const response = await fetch('/api/categories?activeOnly=true');
+  const data = await response.json();
+  activeCategoriesState = data;
+  renderCategoryOptions(selectedName);
 };
 
 const moveCategory = (id, makeActive) => {
@@ -338,7 +373,17 @@ if (categoryModal) {
 if (addCategoryButton) {
   addCategoryButton.addEventListener('click', async () => {
     const name = newCategoryName.value.trim();
-    if (!name) return;
+    if (!name) {
+      if (newCategoryHelper) newCategoryHelper.textContent = 'Kategori adı zorunludur.';
+      return;
+    }
+    const exists = categoryState.some(
+      (category) => category.name && category.name.toLowerCase() === name.toLowerCase()
+    );
+    if (exists) {
+      if (newCategoryHelper) newCategoryHelper.textContent = 'Bu kategori zaten mevcut.';
+      return;
+    }
     const color = newCategoryColor.value || '#3B82F6';
     const response = await fetch('/api/categories', {
       method: 'POST',
@@ -347,6 +392,7 @@ if (addCategoryButton) {
     });
     if (response.ok) {
       const data = await response.json();
+      if (newCategoryHelper) newCategoryHelper.textContent = '';
       categoryState.push({
         id: data.id,
         name: data.name,
@@ -356,6 +402,9 @@ if (addCategoryButton) {
       });
       newCategoryName.value = '';
       filterCategories();
+      await refreshActiveCategories({ selectedName: data.name });
+    } else if (response.status === 409) {
+      if (newCategoryHelper) newCategoryHelper.textContent = 'Bu kategori zaten mevcut.';
     }
   });
 }
@@ -370,6 +419,7 @@ if (saveCategoryChanges) {
       body: JSON.stringify({ activateIds, deactivateIds })
     });
     originalCategoryState = categoryState.map((item) => ({ ...item }));
+    await refreshActiveCategories();
     if (categoryModal) categoryModal.classList.remove('is-open');
   });
 }
@@ -384,6 +434,66 @@ if (cancelCategoryChanges) {
 
 if (categoryModal) {
   categoryModal.addEventListener('modal:open', loadCategories);
+}
+
+if (newCategoryName) {
+  newCategoryName.addEventListener('input', () => {
+    if (newCategoryHelper) newCategoryHelper.textContent = '';
+  });
+}
+
+const openColorDialog = () => {
+  if (!colorPickerDialog) return;
+  draftCategoryColor = newCategoryColor ? newCategoryColor.value : '#3B82F6';
+  if (colorPickerInput) colorPickerInput.value = draftCategoryColor;
+  if (colorPickerPreview) colorPickerPreview.style.background = draftCategoryColor;
+  colorPickerDialog.classList.add('is-open');
+  colorPickerDialog.setAttribute('aria-hidden', 'false');
+};
+
+const closeColorDialog = () => {
+  if (!colorPickerDialog) return;
+  colorPickerDialog.classList.remove('is-open');
+  colorPickerDialog.setAttribute('aria-hidden', 'true');
+};
+
+if (openColorPicker) {
+  openColorPicker.addEventListener('click', openColorDialog);
+}
+
+if (colorPickerInput) {
+  colorPickerInput.addEventListener('input', (event) => {
+    draftCategoryColor = event.target.value;
+    if (colorPickerPreview) colorPickerPreview.style.background = draftCategoryColor;
+  });
+}
+
+if (saveColorPick) {
+  saveColorPick.addEventListener('click', () => {
+    if (newCategoryColor) newCategoryColor.value = draftCategoryColor;
+    if (newCategoryColorPreview) newCategoryColorPreview.style.background = draftCategoryColor;
+    closeColorDialog();
+  });
+}
+
+if (cancelColorPick) {
+  cancelColorPick.addEventListener('click', closeColorDialog);
+}
+
+if (colorPickerDialog) {
+  colorPickerDialog.addEventListener('click', (event) => {
+    if (event.target === colorPickerDialog) {
+      closeColorDialog();
+    }
+  });
+}
+
+if (newCategoryColorPreview && newCategoryColor) {
+  newCategoryColorPreview.style.background = newCategoryColor.value || '#3B82F6';
+}
+
+if (categorySelect) {
+  refreshActiveCategories();
 }
 
 const addTaskTypeButton = document.getElementById('addTaskType');

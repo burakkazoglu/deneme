@@ -66,7 +66,7 @@ const permissionMap = {
   contentPlan: '/content-plan',
   tasks: '/tasks',
   ideas: '/ideas',
-  reporting: '/performance',
+  reporting: '/reports/performance',
   settings: '/settings/general'
 };
 
@@ -105,7 +105,7 @@ const buildNav = (user) => {
       key: 'reportingGroup',
       icon: 'insights',
       children: [
-        { label: 'Performans', href: '/performance', key: 'reporting' },
+        { label: 'Performans', href: '/reports/performance', key: 'reporting' },
         { label: 'Dashboard', href: '/reports/dashboard', key: 'reporting' }
       ]
     },
@@ -375,7 +375,9 @@ app.post('/influencers/manage/:id/delete', ensureAuth, ensurePermission('influen
 });
 
 app.get('/api/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
-  const categories = await Category.find().sort({ name: 1 });
+  const activeOnly = req.query.activeOnly === 'true';
+  const filter = activeOnly ? { isActive: true } : {};
+  const categories = await Category.find(filter).sort({ name: 1 });
   const influencers = await User.find({ role: 'influencer' });
   const withCounts = categories.map((category) => ({
     id: category._id,
@@ -492,43 +494,28 @@ app.get('/ideas', ensureAuth, ensurePermission('ideas'), (req, res) => {
   res.render('ideas');
 });
 
-app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, res) => {
-  const { startDate, endDate } = req.query;
-  const start = parseDateTr(startDate);
-  const end = parseDateTr(endDate);
-  const fallbackStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const fallbackEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
-  const rangeStart = start || fallbackStart;
-  const rangeEnd = end || fallbackEnd;
+app.get('/reports/performance', ensureAuth, ensurePermission('reporting'), async (req, res) => {
   const influencers = await User.find({ role: 'influencer' });
-
-  const monthlyTasks = influencers.map((influencer) => {
-    const tasks = influencer.tasks.filter((task) => {
-      if (!task.dueDate) return false;
-      return task.dueDate >= rangeStart && task.dueDate <= rangeEnd;
-    });
-    return {
+  const users = await User.find().select('fullName role');
+  const tasks = influencers.flatMap((influencer) =>
+    influencer.tasks.map((task) => ({
+      id: task._id,
+      title: task.title,
+      taskType: task.taskType || 'Görev',
+      status: task.status,
+      dueDate: task.dueDate,
+      createdAt: task.createdAt,
+      completedAt: task.completedAt,
       influencerName: influencer.fullName,
-      total: tasks.length,
-      done: tasks.filter((task) => task.status === 'tamamlandi').length,
-      inProgress: tasks.filter((task) => task.status === 'devam_ediyor').length
-    };
-  });
-
-  const yearlyTotal = influencers.reduce(
-    (sum, influencer) =>
-      sum +
-      influencer.tasks.filter(
-        (task) => task.dueDate && task.dueDate >= rangeStart && task.dueDate <= rangeEnd
-      ).length,
-    0
+      platforms: influencer.platforms || [],
+      assignedTo: task.assignedTo || null
+    }))
   );
 
   res.render('performance', {
-    startDate: startDate || formatDate(rangeStart),
-    endDate: endDate || formatDate(rangeEnd),
-    monthlyTasks,
-    yearlyTotal
+    tasks,
+    influencers,
+    users
   });
 });
 
@@ -601,6 +588,10 @@ app.get('/reports/dashboard', ensureAuth, ensurePermission('reporting'), async (
     platformWorkload,
     influencerCounts
   });
+});
+
+app.get('/performance', ensureAuth, ensurePermission('reporting'), (req, res) => {
+  res.redirect('/reports/performance');
 });
 
 app.get('/settings/general', ensureAuth, ensurePermission('settings'), (req, res) => {

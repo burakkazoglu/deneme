@@ -91,20 +91,24 @@
   const platformWorkload = <%- JSON.stringify(platformWorkload || []) %>;
   const influencerCounts = <%- JSON.stringify(influencerCounts || []) %>;
 
-  const {
-    ResponsiveContainer,
-    PieChart,
-    Pie,
-    Cell,
-    LineChart,
-    Line,
-    CartesianGrid,
-    XAxis,
-    YAxis,
-    Tooltip,
-    BarChart,
-    Bar
-  } = Recharts;
+  const chartsLib = window.Recharts;
+  if (!chartsLib) {
+    console.error('Recharts yüklenemedi.');
+  } else {
+    const {
+      ResponsiveContainer,
+      PieChart,
+      Pie,
+      Cell,
+      LineChart,
+      Line,
+      CartesianGrid,
+      XAxis,
+      YAxis,
+      Tooltip,
+      BarChart,
+      Bar
+    } = chartsLib;
 
   const COLORS = ['#f59e0b', '#3b82f6', '#ef4444', '#22c55e'];
 
@@ -156,9 +160,10 @@
       )
     );
 
-  ReactDOM.createRoot(document.getElementById('statusPie')).render(renderPie());
-  ReactDOM.createRoot(document.getElementById('doneLine')).render(renderLine());
-  ReactDOM.createRoot(document.getElementById('platformBar')).render(renderBar(platformWorkload, 'platform'));
-  ReactDOM.createRoot(document.getElementById('influencerBar')).render(renderBar(influencerCounts, 'influencer'));
+    ReactDOM.createRoot(document.getElementById('statusPie')).render(renderPie());
+    ReactDOM.createRoot(document.getElementById('doneLine')).render(renderLine());
+    ReactDOM.createRoot(document.getElementById('platformBar')).render(renderBar(platformWorkload, 'platform'));
+    ReactDOM.createRoot(document.getElementById('influencerBar')).render(renderBar(influencerCounts, 'influencer'));
+  }
 </script>
 <%- include('partials/footer') %>
