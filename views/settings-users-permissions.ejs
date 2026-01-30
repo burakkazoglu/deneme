@@ -1,0 +1,35 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/appbar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div>
+      <h1>Yetki Yönetimi</h1>
+      <p>Kullanıcı için erişim izinlerini seçin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Yetki Seçimi</h2>
+    <form class="form-grid" action="/settings/users/create" method="POST">
+      <input type="hidden" name="fullName" value="<%= fullName %>" />
+      <input type="hidden" name="email" value="<%= email %>" />
+      <input type="hidden" name="password" value="<%= password %>" />
+      <input type="hidden" name="role" value="<%= role %>" />
+
+      <fieldset class="permissions">
+        <legend>Yetkiler</legend>
+        <label><input type="checkbox" name="permissions" value="influencers" /> Influencer Listesi</label>
+        <label><input type="checkbox" name="permissions" value="influencerManage" /> Influencer Ekle/Çıkar</label>
+        <label><input type="checkbox" name="permissions" value="contentPlan" /> İçerik Planı</label>
+        <label><input type="checkbox" name="permissions" value="tasks" /> Görevler</label>
+        <label><input type="checkbox" name="permissions" value="ideas" /> Başlık / Post Fikirleri</label>
+        <label><input type="checkbox" name="permissions" value="reporting" /> Raporlar</label>
+        <label><input type="checkbox" name="permissions" value="settings" /> Ayarlar</label>
+      </fieldset>
+
+      <button type="submit">Kullanıcıyı Oluştur</button>
+    </form>
+  </section>
+</main>
+<%- include('partials/footer') %>

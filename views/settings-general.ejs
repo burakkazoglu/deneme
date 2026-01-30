@@ -1,0 +1,31 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/appbar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div>
+      <h1>Genel Ayarlar</h1>
+      <p>Marka ve sistem ayarlarını yönetin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Logo Ayarları</h2>
+    <form class="form-grid" action="/settings/general" method="POST" enctype="multipart/form-data">
+      <label>
+        Logo Yükle
+        <input type="file" name="logoFile" accept="image/*" />
+      </label>
+      <div class="logo-preview">
+        <p>Mevcut Logo</p>
+        <img src="<%= settings.logoUrl %>" alt="Mevcut Logo" />
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" name="notificationsEnabled" <%= settings.notificationsEnabled ? 'checked' : '' %> />
+        Bildirimler aktif olsun
+      </label>
+      <button type="submit">Kaydet</button>
+    </form>
+  </section>
+</main>
+<%- include('partials/footer') %>
