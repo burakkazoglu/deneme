@@ -82,9 +82,18 @@
     </div>
   </section>
 </main>
+<script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+      "recharts": "https://esm.sh/recharts@2.12.2"
+    }
+  }
+</script>
 <script type="module">
-  import React from 'https://esm.sh/react@18.2.0';
-  import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
   import {
     ResponsiveContainer,
     PieChart,
@@ -99,7 +108,7 @@
     BarChart,
     Bar,
     Legend
-  } from 'https://esm.sh/recharts@2.12.2';
+  } from 'recharts';
 
   const statusDistribution = <%- JSON.stringify(statusDistribution || []) %>;
   const last14Days = <%- JSON.stringify(last14Days || []) %>;

@@ -4,9 +4,23 @@
   <div id="performanceApp"></div>
 </main>
 <link rel="stylesheet" href="https://unpkg.com/@mui/x-data-grid@6.20.2/umd/material-ui-x-data-grid.min.css" />
+<script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+      "@mui/material": "https://esm.sh/@mui/material@5.15.20",
+      "@mui/x-date-pickers-pro": "https://esm.sh/@mui/x-date-pickers-pro@6.20.2",
+      "@mui/x-date-pickers-pro/AdapterDayjs": "https://esm.sh/@mui/x-date-pickers-pro@6.20.2/AdapterDayjs",
+      "@mui/x-data-grid": "https://esm.sh/@mui/x-data-grid@6.20.2",
+      "dayjs": "https://esm.sh/dayjs@1.11.10",
+      "recharts": "https://esm.sh/recharts@2.12.2"
+    }
+  }
+</script>
 <script type="module">
-  import React, { useMemo, useState } from 'https://esm.sh/react@18.2.0';
-  import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+  import React, { useMemo, useState } from 'react';
+  import { createRoot } from 'react-dom/client';
   import {
     Box,
     Card,
@@ -26,11 +40,11 @@
     Divider,
     Drawer,
     Chip
-  } from 'https://esm.sh/@mui/material@5.15.20';
-  import { LocalizationProvider, DateRangePicker } from 'https://esm.sh/@mui/x-date-pickers-pro@6.20.2';
-  import { AdapterDayjs } from 'https://esm.sh/@mui/x-date-pickers-pro@6.20.2/AdapterDayjs';
-  import { DataGrid } from 'https://esm.sh/@mui/x-data-grid@6.20.2';
-  import dayjs from 'https://esm.sh/dayjs@1.11.10';
+  } from '@mui/material';
+  import { LocalizationProvider, DateRangePicker } from '@mui/x-date-pickers-pro';
+  import { AdapterDayjs } from '@mui/x-date-pickers-pro/AdapterDayjs';
+  import { DataGrid } from '@mui/x-data-grid';
+  import dayjs from 'dayjs';
   import {
     ResponsiveContainer,
     PieChart,
@@ -45,7 +59,7 @@
     BarChart,
     Bar,
     Legend
-  } from 'https://esm.sh/recharts@2.12.2';
+  } from 'recharts';
 
   const initialTasks = <%- JSON.stringify(tasks || []) %>;
   const influencers = <%- JSON.stringify(influencers || []) %>;

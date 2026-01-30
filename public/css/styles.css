@@ -625,7 +625,12 @@ label {
 
 .category-new-fields {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+}
+
+.category-new-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: end;
 }
@@ -646,15 +651,12 @@ label {
   min-height: 16px;
 }
 
-.color-field {
-  display: grid;
-  gap: 6px;
-}
-
-.color-field__controls {
+.category-new-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .color-swatch {
@@ -700,16 +702,19 @@ label {
   border-radius: 12px;
   background: #fff;
   padding: 6px;
+  width: 48px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .color-swatch-button .color-dot {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   border: 1px solid rgba(15, 23, 42, 0.1);
 }
@@ -729,6 +734,14 @@ label {
   box-shadow: inset 0 0 0 2px #fff;
 }
 
+.color-swatch-button.is-selected {
+  border: 2px solid var(--primary);
+}
+
+.color-swatch-button:hover {
+  background: #f8fafc;
+}
+
 .color-input-hidden {
   position: absolute;
   opacity: 0;
@@ -737,9 +750,15 @@ label {
 
 .color-picker-preview {
   width: 100%;
-  height: 40px;
-  border-radius: 10px;
+  height: 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+.outline-full {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: transparent;
 }
 
 .color-picker-actions {
@@ -804,6 +823,13 @@ label {
 .category-move {
   padding: 4px 10px;
   font-size: 12px;
+}
+
+#platformSelect {
+  min-height: 48px;
+  padding: 12px;
+  display: block;
+  overflow: visible;
 }
 
 .modal__footer {
@@ -963,7 +989,7 @@ label {
     grid-template-columns: 1fr;
   }
 
-  .category-new-fields {
+  .category-new-row {
     grid-template-columns: 1fr;
   }
 
