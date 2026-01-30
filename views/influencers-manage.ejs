@@ -1,0 +1,81 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Yeni Influencer Ekle/Çıkar</h1>
+      <p>Influencer kayıtlarını yönetin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Yeni Influencer Ekle</h2>
+    <form class="form-grid" action="/influencers/manage" method="POST">
+      <label>
+        Ad Soyad
+        <input type="text" name="fullName" required />
+      </label>
+      <label>
+        E-posta
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Şifre
+        <input type="password" name="password" required />
+      </label>
+      <label>
+        Kategori
+        <select name="category" required>
+          <option value="">Seçiniz</option>
+          <option value="Sağlık">Sağlık</option>
+          <option value="Teknoloji">Teknoloji</option>
+          <option value="Güzellik & Makyaj">Güzellik & Makyaj</option>
+          <option value="Moda">Moda</option>
+          <option value="Spor">Spor</option>
+        </select>
+      </label>
+      <fieldset class="permissions">
+        <legend>Platformlar</legend>
+        <label><input type="checkbox" name="platforms" value="Instagram" /> Instagram</label>
+        <label><input type="checkbox" name="platforms" value="TikTok" /> TikTok</label>
+        <label><input type="checkbox" name="platforms" value="YouTube" /> YouTube</label>
+        <label><input type="checkbox" name="platforms" value="X" /> X</label>
+      </fieldset>
+      <button type="submit">Influencer Oluştur</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Influencer Çıkar</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Kategori</th>
+            <th>Platformlar</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% influencers.forEach((influencer) => { %>
+            <tr>
+              <td><%= influencer.fullName %></td>
+              <td><%= influencer.email %></td>
+              <td><%= influencer.category || '-' %></td>
+              <td><%= influencer.platforms.join(', ') || '-' %></td>
+              <td>
+                <form action="/influencers/manage/<%= influencer._id %>/delete" method="POST" class="inline-form">
+                  <button type="submit" class="danger">Sil</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

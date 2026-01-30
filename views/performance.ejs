@@ -1,0 +1,66 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Performans</h1>
+      <p>Raporlama ve KPI takibi.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Görev Raporları</h2>
+        <p>Influencer iş takibi ve tamamlanma durumu.</p>
+      </div>
+      <form class="form-inline" method="GET" action="/performance">
+        <label>
+          Ay
+          <input type="number" min="1" max="12" name="month" value="<%= selectedMonth %>" />
+        </label>
+        <label>
+          Yıl
+          <input type="number" min="2020" max="2100" name="year" value="<%= selectedYear %>" />
+        </label>
+        <label>
+          Gün
+          <input type="number" min="1" max="31" name="day" value="<%= selectedDay || '' %>" />
+        </label>
+        <button type="submit">Filtrele</button>
+      </form>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Bu Yıl Toplam İş</h3>
+        <p><%= yearlyTotal %> iş</p>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Influencer</th>
+            <th>Bu Ay İş Sayısı</th>
+            <th>Tamamlanan</th>
+            <th>Devam Eden</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% monthlyTasks.forEach((row) => { %>
+            <tr>
+              <td><%= row.influencerName %></td>
+              <td><%= row.total %></td>
+              <td><%= row.done %></td>
+              <td><%= row.inProgress %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>
