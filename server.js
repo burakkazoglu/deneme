@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 mongoose.set('bufferCommands', false);
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://admin:12345Cs*@localhost:27017/influencer_planner?authSource=admin')
+  .connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/influencer_planner')
   .then(() => console.log('MongoDB connected'))
   .catch((error) => console.error('MongoDB connection error:', error));
 
@@ -49,7 +49,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb://admin:12345Cs*@localhost:27017/influencer_planner?authSource=admin',
+      mongoUrl: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/influencer_planner',
       collectionName: 'sessions'
     }),
     cookie: {
@@ -78,10 +78,11 @@ const canAccess = (user, key) => {
 const buildNav = (user) => {
   if (!user) return [];
   const nav = [
-    { label: 'Anasayfa', href: '/', key: 'home' },
+    { label: 'Anasayfa', href: '/', key: 'home', icon: '🏠' },
     {
       label: 'Influencer Yönetimi',
       key: 'influencersGroup',
+      icon: '👥',
       children: [
         { label: 'Influencer Listesi', href: '/influencers', key: 'influencers' },
         { label: 'Yeni Influencer Ekle/Çıkar', href: '/influencers/manage', key: 'influencerManage' }
@@ -90,6 +91,7 @@ const buildNav = (user) => {
     {
       label: 'İçerik & Görevler',
       key: 'contentGroup',
+      icon: '📝',
       children: [
         { label: 'İçerik Planı', href: '/content-plan', key: 'contentPlan' },
         { label: 'Görevler / To-Do', href: '/tasks', key: 'tasks' },
@@ -99,15 +101,18 @@ const buildNav = (user) => {
     {
       label: 'Raporlar',
       key: 'reportingGroup',
+      icon: '📊',
       children: [{ label: 'Performans', href: '/performance', key: 'reporting' }]
     },
     {
       label: 'Ayarlar',
       key: 'settingsGroup',
+      icon: '⚙️',
       children: [
         { label: 'Genel Ayarlar', href: '/settings/general', key: 'settings' },
         { label: 'Kullanıcılar', href: '/settings/users', key: 'settings' },
-        { label: 'Bildirimler', href: '/settings/notifications', key: 'settings' }
+        { label: 'Bildirimler', href: '/settings/notifications', key: 'settings' },
+        { label: 'Duyuru Panosu', href: '/settings/announcement', key: 'settings' }
       ]
     }
   ];
@@ -143,6 +148,17 @@ const ensurePermission = (key) => (req, res, next) => {
   return res.status(403).render('not-authorized');
 };
 
+const ensureAdmin = (req, res, next) => {
+  const user = res.locals.currentUser;
+  if (!user) {
+    return res.redirect('/login');
+  }
+  if (user.role === 'admin') {
+    return next();
+  }
+  return res.status(403).render('not-authorized');
+};
+
 const formatDate = (date) => {
   if (!date) return '-';
   const day = `${date.getDate()}`.padStart(2, '0');
@@ -157,6 +173,13 @@ const formatDateInput = (date) => {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const year = date.getFullYear();
   return `${year}-${month}-${day}`;
+};
+
+const parseDateTr = (value) => {
+  if (!value) return null;
+  const [day, month, year] = value.split('.').map((item) => Number(item));
+  if (!day || !month || !year) return null;
+  return new Date(year, month - 1, day);
 };
 
 const statusLabelMap = {
@@ -175,7 +198,13 @@ const statusClassMap = {
 
 const loadSessionData = async (req, res, next) => {
   res.locals.currentUser = null;
-  res.locals.settings = { logoUrl: '/public-logo.svg', notificationsEnabled: true, taskTypes: [] };
+  res.locals.settings = {
+    logoUrl: '/public-logo.svg',
+    notificationsEnabled: true,
+    taskTypes: [],
+    announcementText: '',
+    categories: []
+  };
   try {
     if (req.session.userId) {
       res.locals.currentUser = await User.findById(req.session.userId);
@@ -193,6 +222,7 @@ const loadSessionData = async (req, res, next) => {
   res.locals.formatDateInput = formatDateInput;
   res.locals.formatStatus = (status) => statusLabelMap[status] || status;
   res.locals.statusClass = (status) => statusClassMap[status] || 'pending';
+  res.locals.currentPath = req.path;
   return next();
 };
 
@@ -301,7 +331,8 @@ app.get('/influencers', ensureAuth, ensurePermission('influencers'), async (req,
 
 app.get('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   const influencers = await User.find({ role: 'influencer' });
-  res.render('influencers-manage', { influencers });
+  const categories = res.locals.settings.categories || [];
+  res.render('influencers-manage', { influencers, categories });
 });
 
 app.post('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
@@ -322,6 +353,18 @@ app.post('/influencers/manage', ensureAuth, ensurePermission('influencerManage')
 
 app.post('/influencers/manage/:id/delete', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   await User.findByIdAndDelete(req.params.id);
+  res.redirect('/influencers/manage');
+});
+
+app.post('/influencers/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const { categoryName } = req.body;
+  const trimmed = categoryName ? categoryName.trim() : '';
+  if (trimmed) {
+    const settings = await Settings.findOne();
+    const current = settings?.categories || [];
+    const updated = Array.from(new Set([...current, trimmed]));
+    await Settings.findOneAndUpdate({}, { categories: updated }, { upsert: true });
+  }
   res.redirect('/influencers/manage');
 });
 
@@ -387,19 +430,19 @@ app.get('/ideas', ensureAuth, ensurePermission('ideas'), (req, res) => {
 });
 
 app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, res) => {
-  const { month, year, day } = req.query;
-  const selectedMonth = month ? Number(month) : new Date().getMonth() + 1;
-  const selectedYear = year ? Number(year) : new Date().getFullYear();
-  const selectedDay = day ? Number(day) : null;
+  const { startDate, endDate } = req.query;
+  const start = parseDateTr(startDate);
+  const end = parseDateTr(endDate);
+  const fallbackStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const fallbackEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+  const rangeStart = start || fallbackStart;
+  const rangeEnd = end || fallbackEnd;
   const influencers = await User.find({ role: 'influencer' });
 
   const monthlyTasks = influencers.map((influencer) => {
     const tasks = influencer.tasks.filter((task) => {
       if (!task.dueDate) return false;
-      if (task.dueDate.getMonth() + 1 !== selectedMonth) return false;
-      if (task.dueDate.getFullYear() !== selectedYear) return false;
-      if (selectedDay && task.dueDate.getDate() !== selectedDay) return false;
-      return true;
+      return task.dueDate >= rangeStart && task.dueDate <= rangeEnd;
     });
     return {
       influencerName: influencer.fullName,
@@ -413,15 +456,14 @@ app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, r
     (sum, influencer) =>
       sum +
       influencer.tasks.filter(
-        (task) => task.dueDate && task.dueDate.getFullYear() === selectedYear
+        (task) => task.dueDate && task.dueDate >= rangeStart && task.dueDate <= rangeEnd
       ).length,
     0
   );
 
   res.render('performance', {
-    selectedMonth,
-    selectedYear,
-    selectedDay,
+    startDate: startDate || formatDate(rangeStart),
+    endDate: endDate || formatDate(rangeEnd),
     monthlyTasks,
     yearlyTotal
   });
@@ -481,6 +523,22 @@ app.post('/settings/users/:id/delete', ensureAuth, ensurePermission('settings'),
 app.get('/settings/notifications', ensureAuth, ensurePermission('settings'), (req, res) => {
   res.render('settings-notifications');
 });
+
+app.get('/settings/announcement', ensureAuth, ensurePermission('settings'), ensureAdmin, (req, res) => {
+  res.render('settings-announcement');
+});
+
+app.post(
+  '/settings/announcement',
+  ensureAuth,
+  ensurePermission('settings'),
+  ensureAdmin,
+  async (req, res) => {
+    const { announcementText } = req.body;
+    await Settings.findOneAndUpdate({}, { announcementText }, { upsert: true });
+    res.redirect('/settings/announcement');
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

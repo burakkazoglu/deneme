@@ -3,9 +3,13 @@
 <main class="main">
   <header class="main__header">
     <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
-    <div>
+    <div class="header-title">
       <h1>Anasayfa</h1>
       <p>Hoş geldin, <strong><%= user.fullName %></strong>.</p>
+    </div>
+    <div class="announcement-panel">
+      <h3>Duyuru Panosu</h3>
+      <p><%= settings.announcementText %></p>
     </div>
   </header>
 

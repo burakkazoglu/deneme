@@ -18,6 +18,13 @@ const statusLabelMap = {
   tamamlandi: 'Tamamlandı'
 };
 
+const statusIconMap = {
+  bekliyor: '🟡',
+  devam_ediyor: '🔵',
+  duraklatildi: '⏸️',
+  tamamlandi: '✅'
+};
+
 const statusClassMap = {
   bekliyor: 'pending',
   devam_ediyor: 'in-progress',
@@ -68,13 +75,14 @@ const renderDayDetails = (date, tasks) => {
     const item = document.createElement('div');
     const statusClass = statusClassMap[task.status] || 'pending';
     const statusLabel = statusLabelMap[task.status] || task.status;
+    const statusIcon = statusIconMap[task.status] || '•';
     item.className = 'calendar-detail__item';
     item.innerHTML = `
       <div>
         <strong>${task.title}</strong>
         <div class="task-meta">${task.taskType} • ${task.influencer}</div>
       </div>
-      <span class="status status--${statusClass}">${statusLabel}</span>
+      <span class="status status--${statusClass}"><span class="status-icon">${statusIcon}</span>${statusLabel}</span>
     `;
     calendarDetailContent.appendChild(item);
   });
@@ -117,6 +125,23 @@ if (calendarElement && window.calendarTasks && window.FullCalendar) {
       if (task && task.influencer) {
         info.el.title = `${task.influencer}: ${task.title}`;
       }
+    },
+    eventMouseEnter(info) {
+      const task = info.event.extendedProps;
+      if (!task) return;
+      const tooltip = document.createElement('div');
+      tooltip.className = 'tooltip';
+      tooltip.textContent = `${task.influencer}: ${task.title}`;
+      tooltip.id = `tooltip-${Date.now()}`;
+      document.body.appendChild(tooltip);
+      const rect = info.el.getBoundingClientRect();
+      tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 8}px`;
+      tooltip.style.left = `${rect.left + window.scrollX}px`;
+      info.el.dataset.tooltipId = tooltip.id;
+    },
+    eventMouseLeave(info) {
+      const tooltip = document.getElementById(info.el.dataset.tooltipId);
+      if (tooltip) tooltip.remove();
     }
   });
 

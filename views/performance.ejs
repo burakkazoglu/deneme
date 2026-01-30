@@ -17,16 +17,12 @@
       </div>
       <form class="form-inline" method="GET" action="/performance">
         <label>
-          Ay
-          <input type="number" min="1" max="12" name="month" value="<%= selectedMonth %>" />
+          Başlangıç (gg.aa.yyyy)
+          <input type="text" name="startDate" value="<%= startDate %>" placeholder="01.01.2025" />
         </label>
         <label>
-          Yıl
-          <input type="number" min="2020" max="2100" name="year" value="<%= selectedYear %>" />
-        </label>
-        <label>
-          Gün
-          <input type="number" min="1" max="31" name="day" value="<%= selectedDay || '' %>" />
+          Bitiş (gg.aa.yyyy)
+          <input type="text" name="endDate" value="<%= endDate %>" placeholder="31.01.2025" />
         </label>
         <button type="submit">Filtrele</button>
       </form>
