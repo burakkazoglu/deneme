@@ -25,10 +25,6 @@ const settingsSchema = new mongoose.Schema(
     announcementText: {
       type: String,
       default: 'Yeni duyuru eklemek için ayarlara gidin.'
-    },
-    categories: {
-      type: [String],
-      default: ['Sağlık', 'Teknoloji', 'Güzellik & Makyaj', 'Moda', 'Spor']
     }
   },
   { timestamps: true }

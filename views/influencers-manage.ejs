@@ -14,7 +14,7 @@
         <h2>Yeni Influencer Ekle</h2>
         <p>Profil bilgilerini doldurun.</p>
       </div>
-      <button type="button" class="ghost" data-modal-target="categoryModal">Kategori Ekle</button>
+      <button type="button" class="ghost" data-modal-target="categoryModal">Kategori Yönetimi</button>
     </div>
     <form class="form-grid form-grid--four" action="/influencers/manage" method="POST">
       <label>
@@ -34,7 +34,7 @@
         <select name="category" required>
           <option value="">Seçiniz</option>
           <% categories.forEach((category) => { %>
-            <option value="<%= category %>"><%= category %></option>
+            <option value="<%= category.name %>"><%= category.name %></option>
           <% }) %>
         </select>
       </label>
@@ -43,25 +43,25 @@
         <div class="platform-grid">
           <label class="chip-option">
             <input type="checkbox" name="platforms" value="Instagram" class="chip-input" />
-            <span class="material-icons chip-icon">photo_camera</span>
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/instagram.svg" alt="Instagram" />
             <span>Instagram</span>
             <span class="material-icons chip-check">check</span>
           </label>
           <label class="chip-option">
             <input type="checkbox" name="platforms" value="TikTok" class="chip-input" />
-            <span class="material-icons chip-icon">music_note</span>
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/tiktok.svg" alt="TikTok" />
             <span>TikTok</span>
             <span class="material-icons chip-check">check</span>
           </label>
           <label class="chip-option">
             <input type="checkbox" name="platforms" value="YouTube" class="chip-input" />
-            <span class="material-icons chip-icon">play_circle</span>
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/youtube.svg" alt="YouTube" />
             <span>YouTube</span>
             <span class="material-icons chip-check">check</span>
           </label>
           <label class="chip-option">
             <input type="checkbox" name="platforms" value="X" class="chip-input" />
-            <span class="material-icons chip-icon">close</span>
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/x.svg" alt="X" />
             <span>X</span>
             <span class="material-icons chip-check">check</span>
           </label>
@@ -103,20 +103,44 @@
     </div>
   </section>
   <div class="modal" id="categoryModal" aria-hidden="true">
-    <div class="modal__content">
+    <div class="modal__content modal__content--wide">
       <div class="modal__header">
-        <h3>Kategori Ekle</h3>
+        <h3>Kategori Yönetimi</h3>
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
-      <form action="/influencers/categories" method="POST">
-        <label>
-          Yeni kategori adı
-          <input type="text" name="categoryName" placeholder="Örn: Yemek" required />
-        </label>
-        <div class="modal__footer">
-          <button type="submit">Kaydet</button>
+      <div class="modal__body">
+        <div class="category-toolbar">
+          <label>
+            Kategori Ara
+            <input type="text" id="categorySearch" placeholder="Kategori ara..." />
+          </label>
         </div>
-      </form>
+        <div class="category-transfer" id="categoryTransfer">
+          <div class="category-panel">
+            <h4>Aktif Kategoriler</h4>
+            <div class="category-list" id="activeCategoryList"></div>
+          </div>
+          <div class="category-panel">
+            <h4>Pasif Kategoriler</h4>
+            <div class="category-list" id="inactiveCategoryList"></div>
+          </div>
+        </div>
+        <div class="category-new">
+          <label>
+            Yeni kategori adı
+            <input type="text" id="newCategoryName" placeholder="Örn: Yemek" />
+          </label>
+          <label>
+            Renk (opsiyonel)
+            <input type="color" id="newCategoryColor" value="#3B82F6" />
+          </label>
+          <button type="button" class="ghost" id="addCategoryButton">Ekle</button>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="ghost" id="cancelCategoryChanges">İptal</button>
+        <button type="button" id="saveCategoryChanges">Kaydet</button>
+      </div>
     </div>
   </div>
 </main>

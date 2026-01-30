@@ -208,6 +208,15 @@ if (calendarElement && window.calendarTasks && window.FullCalendar) {
 const modalTriggers = document.querySelectorAll('[data-modal-target]');
 const modalCloseButtons = document.querySelectorAll('[data-modal-close]');
 const chipOptions = document.querySelectorAll('.chip-option');
+const categoryModal = document.getElementById('categoryModal');
+const activeCategoryList = document.getElementById('activeCategoryList');
+const inactiveCategoryList = document.getElementById('inactiveCategoryList');
+const categorySearch = document.getElementById('categorySearch');
+const addCategoryButton = document.getElementById('addCategoryButton');
+const newCategoryName = document.getElementById('newCategoryName');
+const newCategoryColor = document.getElementById('newCategoryColor');
+const saveCategoryChanges = document.getElementById('saveCategoryChanges');
+const cancelCategoryChanges = document.getElementById('cancelCategoryChanges');
 
 modalTriggers.forEach((trigger) => {
   trigger.addEventListener('click', () => {
@@ -215,6 +224,7 @@ modalTriggers.forEach((trigger) => {
     const modal = document.getElementById(targetId);
     if (modal) {
       modal.classList.add('is-open');
+      modal.dispatchEvent(new CustomEvent('modal:open'));
     }
   });
 });
@@ -235,6 +245,155 @@ chipOptions.forEach((option) => {
   toggleSelected();
   input.addEventListener('change', toggleSelected);
 });
+
+let categoryState = [];
+let originalCategoryState = [];
+
+const renderCategoryList = (listElement, categories, isActive) => {
+  listElement.innerHTML = '';
+  categories.forEach((category) => {
+    const item = document.createElement('div');
+    item.className = 'category-item';
+    item.draggable = true;
+    item.dataset.id = category.id;
+    item.innerHTML = `
+      <span class="category-dot" style="background:${category.color}"></span>
+      <span class="category-name">${category.name}</span>
+      <span class="category-count">${category.influencerCount || 0}</span>
+      <button type="button" class="ghost category-move" data-target="${isActive ? 'inactive' : 'active'}">
+        ${isActive ? 'Pasife Al' : 'Aktife Al'}
+      </button>
+    `;
+    listElement.appendChild(item);
+  });
+};
+
+const filterCategories = () => {
+  const query = categorySearch ? categorySearch.value.toLowerCase() : '';
+  const filtered = categoryState.filter((category) =>
+    category.name.toLowerCase().includes(query)
+  );
+  const active = filtered.filter((category) => category.isActive);
+  const inactive = filtered.filter((category) => !category.isActive);
+  if (activeCategoryList) renderCategoryList(activeCategoryList, active, true);
+  if (inactiveCategoryList) renderCategoryList(inactiveCategoryList, inactive, false);
+};
+
+const loadCategories = async () => {
+  if (!categoryModal) return;
+  const response = await fetch('/categories');
+  const data = await response.json();
+  categoryState = data;
+  originalCategoryState = data.map((item) => ({ ...item }));
+  filterCategories();
+};
+
+const moveCategory = (id, makeActive) => {
+  categoryState = categoryState.map((category) =>
+    category.id === id ? { ...category, isActive: makeActive } : category
+  );
+  filterCategories();
+};
+
+const handleDragStart = (event) => {
+  const item = event.target.closest('.category-item');
+  if (!item) return;
+  event.dataTransfer.setData('text/plain', item.dataset.id);
+};
+
+const handleDrop = (event, makeActive) => {
+  event.preventDefault();
+  const id = event.dataTransfer.getData('text/plain');
+  if (id) {
+    moveCategory(id, makeActive);
+  }
+};
+
+const handleDragOver = (event) => {
+  event.preventDefault();
+};
+
+if (activeCategoryList) {
+  activeCategoryList.addEventListener('dragover', handleDragOver);
+  activeCategoryList.addEventListener('drop', (event) => handleDrop(event, true));
+  activeCategoryList.addEventListener('dragstart', handleDragStart);
+}
+
+if (inactiveCategoryList) {
+  inactiveCategoryList.addEventListener('dragover', handleDragOver);
+  inactiveCategoryList.addEventListener('drop', (event) => handleDrop(event, false));
+  inactiveCategoryList.addEventListener('dragstart', handleDragStart);
+}
+
+const handleCategoryMoveClick = (event) => {
+  const button = event.target.closest('.category-move');
+  if (!button) return;
+  const item = event.target.closest('.category-item');
+  if (!item) return;
+  const target = button.dataset.target;
+  moveCategory(item.dataset.id, target === 'active');
+};
+
+if (categoryModal) {
+  categoryModal.addEventListener('click', handleCategoryMoveClick);
+}
+
+if (categorySearch) {
+  categorySearch.addEventListener('input', filterCategories);
+}
+
+if (addCategoryButton) {
+  addCategoryButton.addEventListener('click', async () => {
+    const name = newCategoryName.value.trim();
+    if (!name) return;
+    const color = newCategoryColor.value || '#3B82F6';
+    const response = await fetch('/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, color })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      categoryState.push({
+        id: data.id,
+        name: data.name,
+        color: data.color,
+        isActive: true,
+        influencerCount: 0
+      });
+      newCategoryName.value = '';
+      filterCategories();
+    }
+  });
+}
+
+if (saveCategoryChanges) {
+  saveCategoryChanges.addEventListener('click', async () => {
+    const updates = categoryState.map((category) => ({
+      id: category.id,
+      isActive: category.isActive
+    }));
+    await fetch('/categories/bulk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates })
+    });
+    originalCategoryState = categoryState.map((item) => ({ ...item }));
+    if (categoryModal) categoryModal.classList.remove('is-open');
+  });
+}
+
+if (cancelCategoryChanges) {
+  cancelCategoryChanges.addEventListener('click', () => {
+    categoryState = originalCategoryState.map((item) => ({ ...item }));
+    filterCategories();
+    if (categoryModal) categoryModal.classList.remove('is-open');
+  });
+}
+
+if (categoryModal) {
+  categoryModal.addEventListener('modal:open', loadCategories);
+}
 
 const addTaskTypeButton = document.getElementById('addTaskType');
 const taskTypeList = document.getElementById('taskTypeList');

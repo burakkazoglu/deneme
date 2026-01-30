@@ -11,6 +11,7 @@ const fs = require('fs');
 
 const User = require('./models/User');
 const Settings = require('./models/Settings');
+const Category = require('./models/Category');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ mongoose
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -102,7 +104,10 @@ const buildNav = (user) => {
       label: 'Raporlar',
       key: 'reportingGroup',
       icon: 'insights',
-      children: [{ label: 'Performans', href: '/performance', key: 'reporting' }]
+      children: [
+        { label: 'Performans', href: '/performance', key: 'reporting' },
+        { label: 'Dashboard', href: '/reports/dashboard', key: 'reporting' }
+      ]
     },
     {
       label: 'Ayarlar',
@@ -202,8 +207,7 @@ const loadSessionData = async (req, res, next) => {
     logoUrl: '/public-logo.svg',
     notificationsEnabled: true,
     taskTypes: [],
-    announcementText: '',
-    categories: []
+    announcementText: ''
   };
   try {
     if (req.session.userId) {
@@ -263,8 +267,22 @@ const seedDefaultUsers = async () => {
   ]);
 };
 
+const seedDefaultCategories = async () => {
+  const count = await Category.countDocuments();
+  if (count > 0) return;
+  await Category.create([
+    { name: 'Sağlık', color: '#0EA5E9', isActive: true },
+    { name: 'Teknoloji', color: '#6366F1', isActive: true },
+    { name: 'Güzellik & Makyaj', color: '#EC4899', isActive: true },
+    { name: 'Moda', color: '#F97316', isActive: true },
+    { name: 'Spor', color: '#22C55E', isActive: true },
+    { name: 'Yemek', color: '#A855F7', isActive: false }
+  ]);
+};
+
 mongoose.connection.once('open', () => {
   seedDefaultUsers().catch((error) => console.error('Seed error:', error));
+  seedDefaultCategories().catch((error) => console.error('Seed error:', error));
 });
 
 app.get('/login', (req, res) => {
@@ -331,7 +349,7 @@ app.get('/influencers', ensureAuth, ensurePermission('influencers'), async (req,
 
 app.get('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   const influencers = await User.find({ role: 'influencer' });
-  const categories = res.locals.settings.categories || [];
+  const categories = await Category.find({ isActive: true }).sort({ name: 1 });
   res.render('influencers-manage', { influencers, categories });
 });
 
@@ -356,16 +374,56 @@ app.post('/influencers/manage/:id/delete', ensureAuth, ensurePermission('influen
   res.redirect('/influencers/manage');
 });
 
-app.post('/influencers/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
-  const { categoryName } = req.body;
-  const trimmed = categoryName ? categoryName.trim() : '';
-  if (trimmed) {
-    const settings = await Settings.findOne();
-    const current = settings?.categories || [];
-    const updated = Array.from(new Set([...current, trimmed]));
-    await Settings.findOneAndUpdate({}, { categories: updated }, { upsert: true });
+app.get('/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const categories = await Category.find().sort({ name: 1 });
+  const influencers = await User.find({ role: 'influencer' });
+  const withCounts = categories.map((category) => ({
+    id: category._id,
+    name: category.name,
+    color: category.color,
+    isActive: category.isActive,
+    influencerCount: influencers.filter((inf) => inf.category === category.name).length
+  }));
+  res.json(withCounts);
+});
+
+app.post('/categories', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const { name, color } = req.body;
+  const trimmed = name ? name.trim() : '';
+  if (!trimmed) {
+    return res.status(400).json({ error: 'Kategori adı gerekli.' });
   }
-  res.redirect('/influencers/manage');
+  const exists = await Category.findOne({ name: trimmed });
+  if (exists) {
+    return res.status(409).json({ error: 'Kategori zaten mevcut.' });
+  }
+  const category = await Category.create({ name: trimmed, color: color || '#3B82F6', isActive: true });
+  return res.json({ id: category._id, name: category.name, color: category.color, isActive: category.isActive });
+});
+
+app.patch('/categories/:id', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const { isActive } = req.body;
+  const category = await Category.findByIdAndUpdate(
+    req.params.id,
+    { isActive: Boolean(isActive) },
+    { new: true }
+  );
+  return res.json({ id: category._id, name: category.name, isActive: category.isActive });
+});
+
+app.patch('/categories/bulk', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
+  const { updates } = req.body;
+  if (!Array.isArray(updates)) {
+    return res.status(400).json({ error: 'Geçersiz güncelleme verisi.' });
+  }
+  const bulkOps = updates.map((item) => ({
+    updateOne: {
+      filter: { _id: item.id },
+      update: { isActive: Boolean(item.isActive) }
+    }
+  }));
+  await Category.bulkWrite(bulkOps);
+  return res.json({ success: true });
 });
 
 app.get('/content-plan', ensureAuth, ensurePermission('contentPlan'), (req, res) => {
@@ -466,6 +524,35 @@ app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, r
     endDate: endDate || formatDate(rangeEnd),
     monthlyTasks,
     yearlyTotal
+  });
+});
+
+app.get('/reports/dashboard', ensureAuth, ensurePermission('reporting'), async (req, res) => {
+  const influencers = await User.find({ role: 'influencer' });
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 7);
+
+  const allTasks = influencers.flatMap((influencer) =>
+    influencer.tasks.map((task) => ({
+      ...task.toObject(),
+      influencerName: influencer.fullName
+    }))
+  );
+
+  const openTasks = allTasks.filter((task) => task.status !== 'tamamlandi').length;
+  const doneThisWeek = allTasks.filter(
+    (task) => task.status === 'tamamlandi' && task.dueDate && task.dueDate >= weekStart
+  ).length;
+  const overdueTasks = allTasks.filter((task) => task.dueDate && task.dueDate < now && task.status !== 'tamamlandi')
+    .length;
+  const avgCompletionDays = 4;
+
+  res.render('reports-dashboard', {
+    openTasks,
+    doneThisWeek,
+    overdueTasks,
+    avgCompletionDays
   });
 });
 
