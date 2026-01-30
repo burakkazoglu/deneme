@@ -1,0 +1,70 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div>
+      <h1>Kullanıcılar</h1>
+      <p>Kullanıcı ekleyin veya çıkarın.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Kullanıcı Oluştur</h2>
+    <p>Önce kullanıcı bilgilerini girin, sonra yetkileri seçin.</p>
+    <form class="form-grid" action="/settings/users/permissions" method="POST">
+      <label>
+        Ad Soyad
+        <input type="text" name="fullName" required />
+      </label>
+      <label>
+        E-posta
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Şifre
+        <input type="password" name="password" required />
+      </label>
+      <label>
+        Rol
+        <select name="role" required>
+          <option value="admin">Admin</option>
+          <option value="staff">Takım Üyesi</option>
+        </select>
+      </label>
+      <button type="submit">Devam Et</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Kullanıcı Listesi</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Rol</th>
+            <th>Yetkiler</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach((user) => { %>
+            <tr>
+              <td><%= user.fullName %></td>
+              <td><%= user.email %></td>
+              <td><%= user.role %></td>
+              <td><%= user.permissions.join(', ') || '-' %></td>
+              <td>
+                <form action="/settings/users/<%= user._id %>/delete" method="POST" class="inline-form">
+                  <button type="submit" class="danger">Sil</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>
