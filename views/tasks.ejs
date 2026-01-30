@@ -1,0 +1,30 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Görevler / To-Do</h1>
+      <p>Takip edilen görevlerin durumu.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Takım Görevleri</h2>
+    <ul class="task-list">
+      <li>
+        <strong>Yeni kampanya briefini paylaş</strong>
+        <span class="status status--in_progress">in progress</span>
+      </li>
+      <li>
+        <strong>Influencer sözleşmelerini güncelle</strong>
+        <span class="status status--pending">pending</span>
+      </li>
+      <li>
+        <strong>Haftalık raporları hazırla</strong>
+        <span class="status status--done">done</span>
+      </li>
+    </ul>
+  </section>
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,44 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Anasayfa</h1>
+      <p>Hoş geldin, <strong><%= user.fullName %></strong>.</p>
+    </div>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <h3>Planlanan İçerik</h3>
+      <p>Bu hafta 12 paylaşım planlandı.</p>
+    </div>
+    <div class="card">
+      <h3>Aktif Influencer</h3>
+      <p>8 influencer aktif görevde.</p>
+    </div>
+    <div class="card">
+      <h3>Bekleyen Görev</h3>
+      <p>5 görev tamamlanmayı bekliyor.</p>
+    </div>
+  </section>
+
+  <% if (user.role === 'influencer') { %>
+    <section class="panel">
+      <h2>Üzerine Atanan Görevler</h2>
+      <ul class="task-list">
+        <% if (user.tasks.length === 0) { %>
+          <li>Henüz atanmış görevin bulunmuyor.</li>
+        <% } %>
+        <% user.tasks.forEach((task) => { %>
+          <li>
+            <strong><%= task.title %></strong>
+            <span class="status status--<%= task.status %>"><%= task.status %></span>
+          </li>
+        <% }) %>
+      </ul>
+    </section>
+  <% } %>
+</main>
+<%- include('partials/footer') %>
