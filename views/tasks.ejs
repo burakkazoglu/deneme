@@ -1,0 +1,100 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Görevler / To-Do</h1>
+      <p>Takip edilen görevlerin durumu.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Influencer Görev Atama</h2>
+        <p>Görevleri influencerlara atayın.</p>
+      </div>
+      <button type="button" class="ghost" data-modal-target="taskTypeModal">Başlıkları Düzenle</button>
+    </div>
+    <form class="form-grid" action="/tasks/assign" method="POST">
+      <label>
+        Başlık
+        <input type="text" name="title" required />
+      </label>
+      <label>
+        Görev Başlığı
+        <select name="taskType" required>
+          <% taskTypes.forEach((type) => { %>
+            <option value="<%= type %>"><%= type %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Influencer
+        <select name="influencerId" required>
+          <% influencers.forEach((influencer) => { %>
+            <option value="<%= influencer._id %>"><%= influencer.fullName %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Tarih (dd.mm.yyyy)
+        <input type="date" name="dueDate" />
+      </label>
+      <button type="submit">Görev Ata</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Görev Listesi</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Başlık</th>
+            <th>Görev Türü</th>
+            <th>Influencer</th>
+            <th>Tarih</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% allTasks.forEach((task) => { %>
+            <tr>
+              <td><%= task.title %></td>
+              <td><%= task.taskType %></td>
+              <td><%= task.influencerName %></td>
+              <td><%= formatDate(task.dueDate) %></td>
+              <td><span class="status status--<%= statusClass(task.status) %>"><%= formatStatus(task.status) %></span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="modal" id="taskTypeModal" aria-hidden="true">
+    <div class="modal__content">
+      <div class="modal__header">
+        <h3>Görev Başlıkları</h3>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <form action="/tasks/types" method="POST" id="taskTypeForm">
+        <div class="modal__body" id="taskTypeList">
+          <% taskTypes.forEach((type) => { %>
+            <label>
+              Başlık
+              <input type="text" name="taskTypes" value="<%= type %>" />
+            </label>
+          <% }) %>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="ghost" id="addTaskType">Yeni Başlık</button>
+          <button type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+<%- include('partials/footer') %>

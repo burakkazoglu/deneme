@@ -1,0 +1,120 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Yeni Influencer Ekle/Çıkar</h1>
+      <p>Influencer kayıtlarını yönetin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Yeni Influencer Ekle</h2>
+        <p>Profil bilgilerini doldurun.</p>
+      </div>
+      <button type="button" class="ghost" data-modal-target="categoryModal">Kategori Ekle</button>
+    </div>
+    <form class="form-grid" action="/influencers/manage" method="POST">
+      <label>
+        Ad Soyad
+        <input type="text" name="fullName" required />
+      </label>
+      <label>
+        E-posta
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Şifre
+        <input type="password" name="password" required />
+      </label>
+      <label>
+        Kategori
+        <select name="category" required>
+          <option value="">Seçiniz</option>
+          <% categories.forEach((category) => { %>
+            <option value="<%= category %>"><%= category %></option>
+          <% }) %>
+        </select>
+      </label>
+      <fieldset class="permissions">
+        <legend>Platformlar</legend>
+        <div class="platform-grid">
+          <label class="platform-option">
+            <input type="checkbox" name="platforms" value="Instagram" />
+            <span class="platform-icon">📸</span>
+            Instagram
+          </label>
+          <label class="platform-option">
+            <input type="checkbox" name="platforms" value="TikTok" />
+            <span class="platform-icon">🎵</span>
+            TikTok
+          </label>
+          <label class="platform-option">
+            <input type="checkbox" name="platforms" value="YouTube" />
+            <span class="platform-icon">▶️</span>
+            YouTube
+          </label>
+          <label class="platform-option">
+            <input type="checkbox" name="platforms" value="X" />
+            <span class="platform-icon">✖️</span>
+            X
+          </label>
+        </div>
+      </fieldset>
+      <button type="submit">Influencer Oluştur</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Influencer Çıkar</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Kategori</th>
+            <th>Platformlar</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% influencers.forEach((influencer) => { %>
+            <tr>
+              <td><%= influencer.fullName %></td>
+              <td><%= influencer.email %></td>
+              <td><%= influencer.category || '-' %></td>
+              <td><%= influencer.platforms.join(', ') || '-' %></td>
+              <td>
+                <form action="/influencers/manage/<%= influencer._id %>/delete" method="POST" class="inline-form">
+                  <button type="submit" class="danger">Sil</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div class="modal" id="categoryModal" aria-hidden="true">
+    <div class="modal__content">
+      <div class="modal__header">
+        <h3>Kategori Ekle</h3>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <form action="/influencers/categories" method="POST">
+        <label>
+          Yeni kategori adı
+          <input type="text" name="categoryName" placeholder="Örn: Yemek" required />
+        </label>
+        <div class="modal__footer">
+          <button type="submit">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,38 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Influencer Yönetimi</h1>
+      <p>Influencer listesi ve görev atamaları.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Influencer Listesi</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Kategori</th>
+            <th>Platformlar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% influencers.forEach((influencer) => { %>
+            <tr>
+              <td><%= influencer.fullName %></td>
+              <td><%= influencer.email %></td>
+              <td><%= influencer.category || '-' %></td>
+              <td><%= influencer.platforms.join(', ') || '-' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>
