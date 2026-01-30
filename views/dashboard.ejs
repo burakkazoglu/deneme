@@ -12,14 +12,12 @@
   <section class="calendar-layout">
     <div class="panel calendar-panel">
       <div class="calendar-header">
-        <button class="calendar-nav" type="button" data-direction="prev">‹</button>
         <div>
-          <h2 id="calendarTitle">Takvim</h2>
-          <p id="calendarSubtitle">Görev planı</p>
+          <h2>Takvim</h2>
+          <p>Görev planı</p>
         </div>
-        <button class="calendar-nav" type="button" data-direction="next">›</button>
       </div>
-      <div class="calendar-grid" id="calendarGrid"></div>
+      <div id="calendar"></div>
     </div>
 
     <aside class="panel calendar-detail">
@@ -45,17 +43,17 @@
               <div class="task-meta"><%= task.taskType %> • <%= formatDate(task.dueDate) %></div>
             </div>
             <div class="task-actions">
-              <span class="status status--<%= task.status %>"><%= task.status %></span>
+              <span class="status status--<%= statusClass(task.status) %>"><%= formatStatus(task.status) %></span>
               <form action="/tasks/<%= user._id %>/<%= task._id %>/status" method="POST" class="inline-form">
-                <input type="hidden" name="status" value="in_progress" />
+                <input type="hidden" name="status" value="devam_ediyor" />
                 <button type="submit">Başlat</button>
               </form>
               <form action="/tasks/<%= user._id %>/<%= task._id %>/status" method="POST" class="inline-form">
-                <input type="hidden" name="status" value="paused" />
+                <input type="hidden" name="status" value="duraklatildi" />
                 <button type="submit" class="ghost">Durdur</button>
               </form>
               <form action="/tasks/<%= user._id %>/<%= task._id %>/status" method="POST" class="inline-form">
-                <input type="hidden" name="status" value="done" />
+                <input type="hidden" name="status" value="tamamlandi" />
                 <button type="submit" class="success">Tamamlandı</button>
               </form>
             </div>
@@ -65,7 +63,7 @@
     </section>
   <% } %>
 </main>
-<script>
-  window.calendarTasks = <%- JSON.stringify(calendarTasks || []) %>;
-</script>
+  <script>
+    window.calendarTasks = <%- JSON.stringify(calendarTasks || []) %>;
+  </script>
 <%- include('partials/footer') %>

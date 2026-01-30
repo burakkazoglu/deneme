@@ -7,18 +7,29 @@ if (menuToggle && sidebar) {
   });
 }
 
-const calendarGrid = document.getElementById('calendarGrid');
-const calendarTitle = document.getElementById('calendarTitle');
-const calendarSubtitle = document.getElementById('calendarSubtitle');
+const calendarElement = document.getElementById('calendar');
 const calendarDetailContent = document.getElementById('calendarDetailContent');
 const calendarDetailEmpty = document.getElementById('calendarDetailEmpty');
-const calendarNavButtons = document.querySelectorAll('.calendar-nav');
 
-const formatDateKey = (date) => {
-  const day = `${date.getDate()}`.padStart(2, '0');
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const year = date.getFullYear();
-  return `${year}-${month}-${day}`;
+const statusLabelMap = {
+  bekliyor: 'Bekliyor',
+  devam_ediyor: 'Devam Ediyor',
+  duraklatildi: 'Duraklatıldı',
+  tamamlandi: 'Tamamlandı'
+};
+
+const statusClassMap = {
+  bekliyor: 'pending',
+  devam_ediyor: 'in-progress',
+  duraklatildi: 'paused',
+  tamamlandi: 'done'
+};
+
+const statusColorMap = {
+  bekliyor: '#f59e0b',
+  devam_ediyor: '#3b82f6',
+  duraklatildi: '#ef4444',
+  tamamlandi: '#22c55e'
 };
 
 const formatDateDisplay = (date) => {
@@ -31,67 +42,11 @@ const formatDateDisplay = (date) => {
 const groupTasksByDate = (tasks) =>
   tasks.reduce((acc, task) => {
     if (!task.dueDate) return acc;
-    const dateKey = formatDateKey(new Date(task.dueDate));
+    const dateKey = new Date(task.dueDate).toISOString().slice(0, 10);
     acc[dateKey] = acc[dateKey] || [];
     acc[dateKey].push(task);
     return acc;
   }, {});
-
-const renderCalendar = (currentDate, tasks) => {
-  if (!calendarGrid) return;
-  calendarGrid.innerHTML = '';
-  const tasksByDate = groupTasksByDate(tasks || []);
-
-  const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-  const startDay = startOfMonth.getDay() || 7;
-  const totalCells = endOfMonth.getDate() + (startDay - 1);
-  const weeks = Math.ceil(totalCells / 7);
-
-  const monthName = currentDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-  if (calendarTitle) calendarTitle.textContent = monthName;
-  if (calendarSubtitle) calendarSubtitle.textContent = 'Görev planı';
-
-  const dayNames = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-  dayNames.forEach((day) => {
-    const header = document.createElement('div');
-    header.className = 'calendar-cell calendar-cell--header';
-    header.textContent = day;
-    calendarGrid.appendChild(header);
-  });
-
-  let dayCounter = 1;
-  for (let week = 0; week < weeks; week += 1) {
-    for (let day = 1; day <= 7; day += 1) {
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'calendar-cell';
-      if (week === 0 && day < startDay) {
-        cell.classList.add('calendar-cell--empty');
-      } else if (dayCounter > endOfMonth.getDate()) {
-        cell.classList.add('calendar-cell--empty');
-      } else {
-        const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayCounter);
-        const dateKey = formatDateKey(cellDate);
-        const dayTasks = tasksByDate[dateKey] || [];
-        cell.dataset.dateKey = dateKey;
-        cell.textContent = dayCounter;
-        if (dayTasks.length > 0) {
-          cell.classList.add('calendar-cell--has-task');
-          const tooltip = dayTasks
-            .map((task) => `${task.influencer}: ${task.title}`)
-            .join(' • ');
-          cell.title = tooltip;
-        }
-        cell.addEventListener('click', () => {
-          renderDayDetails(cellDate, dayTasks);
-        });
-        dayCounter += 1;
-      }
-      calendarGrid.appendChild(cell);
-    }
-  }
-};
 
 const renderDayDetails = (date, tasks) => {
   if (!calendarDetailContent || !calendarDetailEmpty) return;
@@ -111,30 +66,63 @@ const renderDayDetails = (date, tasks) => {
 
   tasks.forEach((task) => {
     const item = document.createElement('div');
+    const statusClass = statusClassMap[task.status] || 'pending';
+    const statusLabel = statusLabelMap[task.status] || task.status;
     item.className = 'calendar-detail__item';
     item.innerHTML = `
       <div>
         <strong>${task.title}</strong>
         <div class="task-meta">${task.taskType} • ${task.influencer}</div>
       </div>
-      <span class="status status--${task.status}">${task.status}</span>
+      <span class="status status--${statusClass}">${statusLabel}</span>
     `;
     calendarDetailContent.appendChild(item);
   });
 };
 
-if (calendarGrid && window.calendarTasks) {
-  let activeDate = new Date();
-  renderCalendar(activeDate, window.calendarTasks);
-  renderDayDetails(activeDate, groupTasksByDate(window.calendarTasks)[formatDateKey(activeDate)]);
+if (calendarElement && window.calendarTasks && window.FullCalendar) {
+  const tasksByDate = groupTasksByDate(window.calendarTasks);
+  const events = window.calendarTasks
+    .filter((task) => task.dueDate)
+    .map((task) => ({
+      title: `${task.influencer}: ${task.title}`,
+      start: task.dueDate,
+      allDay: true,
+      extendedProps: task,
+      backgroundColor: statusColorMap[task.status] || '#22c55e',
+      borderColor: statusColorMap[task.status] || '#22c55e'
+    }));
 
-  calendarNavButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const direction = button.dataset.direction;
-      activeDate = new Date(activeDate.getFullYear(), activeDate.getMonth() + (direction === 'next' ? 1 : -1), 1);
-      renderCalendar(activeDate, window.calendarTasks);
-    });
+  const calendar = new window.FullCalendar.Calendar(calendarElement, {
+    initialView: 'dayGridMonth',
+    locale: 'tr',
+    events,
+    dayCellDidMount(info) {
+      const dateKey = info.date.toISOString().slice(0, 10);
+      if (tasksByDate[dateKey]) {
+        info.el.classList.add('day-has-task');
+      }
+    },
+    dateClick(info) {
+      const tasks = tasksByDate[info.dateStr] || [];
+      renderDayDetails(info.date, tasks);
+    },
+    eventClick(info) {
+      const dateKey = info.event.startStr.slice(0, 10);
+      const tasks = tasksByDate[dateKey] || [];
+      renderDayDetails(info.event.start, tasks);
+    },
+    eventDidMount(info) {
+      const task = info.event.extendedProps;
+      if (task && task.influencer) {
+        info.el.title = `${task.influencer}: ${task.title}`;
+      }
+    }
   });
+
+  calendar.render();
+  const todayKey = new Date().toISOString().slice(0, 10);
+  renderDayDetails(new Date(), tasksByDate[todayKey]);
 }
 
 const modalTriggers = document.querySelectorAll('[data-modal-target]');

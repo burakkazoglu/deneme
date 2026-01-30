@@ -159,6 +159,20 @@ const formatDateInput = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const statusLabelMap = {
+  bekliyor: 'Bekliyor',
+  devam_ediyor: 'Devam Ediyor',
+  duraklatildi: 'Duraklatıldı',
+  tamamlandi: 'Tamamlandı'
+};
+
+const statusClassMap = {
+  bekliyor: 'pending',
+  devam_ediyor: 'in-progress',
+  duraklatildi: 'paused',
+  tamamlandi: 'done'
+};
+
 const loadSessionData = async (req, res, next) => {
   res.locals.currentUser = null;
   res.locals.settings = { logoUrl: '/public-logo.svg', notificationsEnabled: true, taskTypes: [] };
@@ -177,6 +191,8 @@ const loadSessionData = async (req, res, next) => {
   res.locals.navItems = buildNav(res.locals.currentUser);
   res.locals.formatDate = formatDate;
   res.locals.formatDateInput = formatDateInput;
+  res.locals.formatStatus = (status) => statusLabelMap[status] || status;
+  res.locals.statusClass = (status) => statusClassMap[status] || 'pending';
   return next();
 };
 
@@ -208,10 +224,10 @@ const seedDefaultUsers = async () => {
         {
           title: 'Haftalık içerik planını incele',
           taskType: 'Hook İçerik',
-          status: 'in_progress',
+          status: 'devam_ediyor',
           dueDate: new Date()
         },
-        { title: 'Yeni kampanya fikirleri gönder', taskType: 'Story', status: 'pending' }
+        { title: 'Yeni kampanya fikirleri gönder', taskType: 'Story', status: 'bekliyor' }
       ]
     }
   ]);
@@ -337,6 +353,7 @@ app.post('/tasks/assign', ensureAuth, ensurePermission('tasks'), async (req, res
       tasks: {
         title,
         taskType,
+        status: 'bekliyor',
         dueDate: dueDate ? new Date(dueDate) : undefined
       }
     }
@@ -370,23 +387,25 @@ app.get('/ideas', ensureAuth, ensurePermission('ideas'), (req, res) => {
 });
 
 app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, res) => {
-  const { month, year } = req.query;
+  const { month, year, day } = req.query;
   const selectedMonth = month ? Number(month) : new Date().getMonth() + 1;
   const selectedYear = year ? Number(year) : new Date().getFullYear();
+  const selectedDay = day ? Number(day) : null;
   const influencers = await User.find({ role: 'influencer' });
 
   const monthlyTasks = influencers.map((influencer) => {
     const tasks = influencer.tasks.filter((task) => {
       if (!task.dueDate) return false;
-      return (
-        task.dueDate.getMonth() + 1 === selectedMonth && task.dueDate.getFullYear() === selectedYear
-      );
+      if (task.dueDate.getMonth() + 1 !== selectedMonth) return false;
+      if (task.dueDate.getFullYear() !== selectedYear) return false;
+      if (selectedDay && task.dueDate.getDate() !== selectedDay) return false;
+      return true;
     });
     return {
       influencerName: influencer.fullName,
       total: tasks.length,
-      done: tasks.filter((task) => task.status === 'done').length,
-      inProgress: tasks.filter((task) => task.status === 'in_progress').length
+      done: tasks.filter((task) => task.status === 'tamamlandi').length,
+      inProgress: tasks.filter((task) => task.status === 'devam_ediyor').length
     };
   });
 
@@ -402,6 +421,7 @@ app.get('/performance', ensureAuth, ensurePermission('reporting'), async (req, r
   res.render('performance', {
     selectedMonth,
     selectedYear,
+    selectedDay,
     monthlyTasks,
     yearlyTotal
   });

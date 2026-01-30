@@ -5,7 +5,7 @@
   <nav class="sidebar__nav">
     <% navItems.forEach((item) => { %>
       <% if (item.children) { %>
-        <details class="nav-group" open>
+        <details class="nav-group">
           <summary class="nav-group__title"><%= item.label %></summary>
           <ul>
             <% item.children.forEach((child) => { %>

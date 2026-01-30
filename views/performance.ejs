@@ -24,6 +24,10 @@
           Yıl
           <input type="number" min="2020" max="2100" name="year" value="<%= selectedYear %>" />
         </label>
+        <label>
+          Gün
+          <input type="number" min="1" max="31" name="day" value="<%= selectedDay || '' %>" />
+        </label>
         <button type="submit">Filtrele</button>
       </form>
     </div>

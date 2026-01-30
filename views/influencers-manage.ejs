@@ -35,15 +35,13 @@
           <option value="Spor">Spor</option>
         </select>
       </label>
-      <label>
-        Platformlar
-        <select name="platforms" multiple required>
-          <option value="Instagram">Instagram</option>
-          <option value="TikTok">TikTok</option>
-          <option value="YouTube">YouTube</option>
-          <option value="X">X</option>
-        </select>
-      </label>
+      <fieldset class="permissions">
+        <legend>Platformlar</legend>
+        <label><input type="checkbox" name="platforms" value="Instagram" /> Instagram</label>
+        <label><input type="checkbox" name="platforms" value="TikTok" /> TikTok</label>
+        <label><input type="checkbox" name="platforms" value="YouTube" /> YouTube</label>
+        <label><input type="checkbox" name="platforms" value="X" /> X</label>
+      </fieldset>
       <button type="submit">Influencer Oluştur</button>
     </form>
   </section>

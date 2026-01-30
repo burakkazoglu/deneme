@@ -66,7 +66,7 @@
               <td><%= task.taskType %></td>
               <td><%= task.influencerName %></td>
               <td><%= formatDate(task.dueDate) %></td>
-              <td><span class="status status--<%= task.status %>"><%= task.status %></span></td>
+              <td><span class="status status--<%= statusClass(task.status) %>"><%= formatStatus(task.status) %></span></td>
             </tr>
           <% }) %>
         </tbody>
