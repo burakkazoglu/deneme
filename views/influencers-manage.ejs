@@ -40,32 +40,7 @@
       </label>
       <fieldset class="permissions full-width">
         <legend>Platformlar</legend>
-        <div class="platform-grid">
-          <label class="chip-option">
-            <input type="checkbox" name="platforms" value="Instagram" class="chip-input" />
-            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/instagram.svg" alt="Instagram" />
-            <span>Instagram</span>
-            <span class="material-icons chip-check">check</span>
-          </label>
-          <label class="chip-option">
-            <input type="checkbox" name="platforms" value="TikTok" class="chip-input" />
-            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/tiktok.svg" alt="TikTok" />
-            <span>TikTok</span>
-            <span class="material-icons chip-check">check</span>
-          </label>
-          <label class="chip-option">
-            <input type="checkbox" name="platforms" value="YouTube" class="chip-input" />
-            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/youtube.svg" alt="YouTube" />
-            <span>YouTube</span>
-            <span class="material-icons chip-check">check</span>
-          </label>
-          <label class="chip-option">
-            <input type="checkbox" name="platforms" value="X" class="chip-input" />
-            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/x.svg" alt="X" />
-            <span>X</span>
-            <span class="material-icons chip-check">check</span>
-          </label>
-        </div>
+        <div id="platformSelect"></div>
       </fieldset>
       <button type="submit">Influencer Oluştur</button>
     </form>
@@ -144,8 +119,43 @@
         <div class="color-picker-dialog" id="colorPickerDialog" aria-hidden="true">
           <div class="color-picker-card">
             <h4>Renk Seç</h4>
-            <input type="color" id="colorPickerInput" value="#3B82F6" />
+            <div class="color-swatch-grid" id="colorSwatchGrid">
+              <button type="button" class="color-swatch-button" data-color="#3B82F6">
+                <span class="color-dot" style="background:#3B82F6"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#6366F1">
+                <span class="color-dot" style="background:#6366F1"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#10B981">
+                <span class="color-dot" style="background:#10B981"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#F59E0B">
+                <span class="color-dot" style="background:#F59E0B"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#EF4444">
+                <span class="color-dot" style="background:#EF4444"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#111827">
+                <span class="color-dot" style="background:#111827"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#EC4899">
+                <span class="color-dot" style="background:#EC4899"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+              <button type="button" class="color-swatch-button" data-color="#0EA5E9">
+                <span class="color-dot" style="background:#0EA5E9"></span>
+                <span class="material-icons color-check">check</span>
+              </button>
+            </div>
             <div class="color-picker-preview" id="colorPickerPreview" style="background:#3B82F6"></div>
+            <input type="color" id="colorPickerInput" value="#3B82F6" class="color-input-hidden" />
+            <button type="button" class="ghost" id="openCustomColor">Özel renk</button>
             <div class="color-picker-actions">
               <button type="button" class="ghost" id="cancelColorPick">İptal</button>
               <button type="button" id="saveColorPick">Kaydet</button>
@@ -160,4 +170,59 @@
     </div>
   </div>
 </main>
+<script type="module">
+  import React, { useState } from 'https://esm.sh/react@18.2.0';
+  import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+  import { Chip, Stack } from 'https://esm.sh/@mui/material@5.15.20';
+  import { SiInstagram, SiTiktok, SiYoutube, SiX } from 'https://esm.sh/react-icons@4.12.0/si';
+
+  const PLATFORM_OPTIONS = [
+    { value: 'Instagram', label: 'Instagram', Icon: SiInstagram },
+    { value: 'TikTok', label: 'TikTok', Icon: SiTiktok },
+    { value: 'YouTube', label: 'YouTube', Icon: SiYoutube },
+    { value: 'X', label: 'X', Icon: SiX }
+  ];
+
+  const PlatformSelect = () => {
+    const [selected, setSelected] = useState([]);
+
+    const togglePlatform = (value) => {
+      setSelected((prev) =>
+        prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+      );
+    };
+
+    return React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(
+        Stack,
+        { direction: 'row', flexWrap: 'wrap', gap: 1 },
+        PLATFORM_OPTIONS.map(({ value, label, Icon }) =>
+          React.createElement(Chip, {
+            key: value,
+            label,
+            icon: React.createElement(Icon, { size: 18 }),
+            onClick: () => togglePlatform(value),
+            variant: selected.includes(value) ? 'filled' : 'outlined',
+            color: selected.includes(value) ? 'primary' : 'default',
+            sx: { height: 40, px: 1.25, borderRadius: 999 }
+          })
+        )
+      ),
+      React.createElement(
+        'div',
+        null,
+        selected.map((value) =>
+          React.createElement('input', { key: value, type: 'hidden', name: 'platforms', value })
+        )
+      )
+    );
+  };
+
+  const mountNode = document.getElementById('platformSelect');
+  if (mountNode) {
+    createRoot(mountNode).render(React.createElement(PlatformSelect));
+  }
+</script>
 <%- include('partials/footer') %>

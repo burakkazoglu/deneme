@@ -4,23 +4,10 @@
   <div id="performanceApp"></div>
 </main>
 <link rel="stylesheet" href="https://unpkg.com/@mui/x-data-grid@6.20.2/umd/material-ui-x-data-grid.min.css" />
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@emotion/react@11.11.4/dist/emotion-react.umd.min.js"></script>
-<script src="https://unpkg.com/@emotion/styled@11.11.5/dist/emotion-styled.umd.min.js"></script>
-<script src="https://unpkg.com/@mui/material@5.15.20/umd/material-ui.production.min.js"></script>
-<script src="https://unpkg.com/@mui/icons-material@5.15.20/umd/material-ui-icons.production.min.js"></script>
-<script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
-<script src="https://unpkg.com/@mui/x-date-pickers-pro@6.20.2/umd/material-ui-x-date-pickers-pro.min.js"></script>
-<script src="https://unpkg.com/@mui/x-data-grid@6.20.2/umd/material-ui-x-data-grid.min.js"></script>
-<script src="https://unpkg.com/recharts@2.12.2/umd/Recharts.min.js"></script>
-<script>
-  const initialTasks = <%- JSON.stringify(tasks || []) %>;
-  const influencers = <%- JSON.stringify(influencers || []) %>;
-  const users = <%- JSON.stringify(users || []) %>;
-
-  const { useMemo, useState } = React;
-  const {
+<script type="module">
+  import React, { useMemo, useState } from 'https://esm.sh/react@18.2.0';
+  import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+  import {
     Box,
     Card,
     CardContent,
@@ -39,13 +26,30 @@
     Divider,
     Drawer,
     Chip
-  } = MaterialUI;
+  } from 'https://esm.sh/@mui/material@5.15.20';
+  import { LocalizationProvider, DateRangePicker } from 'https://esm.sh/@mui/x-date-pickers-pro@6.20.2';
+  import { AdapterDayjs } from 'https://esm.sh/@mui/x-date-pickers-pro@6.20.2/AdapterDayjs';
+  import { DataGrid } from 'https://esm.sh/@mui/x-data-grid@6.20.2';
+  import dayjs from 'https://esm.sh/dayjs@1.11.10';
+  import {
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    LineChart,
+    Line,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    BarChart,
+    Bar,
+    Legend
+  } from 'https://esm.sh/recharts@2.12.2';
 
-  const DataGridLib = window.MuiXDataGrid || window.MuiDataGrid || {};
-  const DataGrid = DataGridLib.DataGrid;
-  const DatePickers = window.MuiXDatePickersPro || window.MuiXDatePickers || {};
-  const { LocalizationProvider, DateRangePicker, AdapterDayjs } = DatePickers;
-  const chartsLib = window.Recharts;
+  const initialTasks = <%- JSON.stringify(tasks || []) %>;
+  const influencers = <%- JSON.stringify(influencers || []) %>;
+  const users = <%- JSON.stringify(users || []) %>;
 
   const statusOptions = [
     { value: 'all', label: 'Tümü' },
@@ -72,12 +76,15 @@
     return `${day}.${month}.${year}`;
   };
 
+  const hasValue = (data, key = 'value') =>
+    Array.isArray(data) && data.some((item) => Number(item[key]) > 0);
+
+  const renderEmpty = () =>
+    React.createElement('div', { className: 'chart-empty' }, 'Veri yok');
+
   const PerformanceApp = () => {
     const [preset, setPreset] = useState('30');
-    const [dateRange, setDateRange] = useState([
-      window.dayjs().subtract(29, 'day'),
-      window.dayjs()
-    ]);
+    const [dateRange, setDateRange] = useState([dayjs().subtract(29, 'day'), dayjs()]);
     const [openRangePicker, setOpenRangePicker] = useState(false);
     const [platform, setPlatform] = useState('all');
     const [status, setStatus] = useState('all');
@@ -94,19 +101,19 @@
         return;
       }
       if (value === 'week') {
-        setDateRange([window.dayjs().startOf('week'), window.dayjs()]);
+        setDateRange([dayjs().startOf('week'), dayjs()]);
       }
       if (value === 'month') {
-        setDateRange([window.dayjs().startOf('month'), window.dayjs()]);
+        setDateRange([dayjs().startOf('month'), dayjs()]);
       }
       if (value === '30') {
-        setDateRange([window.dayjs().subtract(29, 'day'), window.dayjs()]);
+        setDateRange([dayjs().subtract(29, 'day'), dayjs()]);
       }
     };
 
     const clearFilters = () => {
       setPreset('30');
-      setDateRange([window.dayjs().subtract(29, 'day'), window.dayjs()]);
+      setDateRange([dayjs().subtract(29, 'day'), dayjs()]);
       setOpenRangePicker(false);
       setPlatform('all');
       setStatus('all');
@@ -119,7 +126,7 @@
       const [start, end] = dateRange;
       return initialTasks.filter((task) => {
         const taskDate = task.dueDate || task.createdAt;
-        const dateValue = taskDate ? window.dayjs(taskDate) : null;
+        const dateValue = taskDate ? dayjs(taskDate) : null;
         if (start && dateValue && dateValue.isBefore(start, 'day')) return false;
         if (end && dateValue && dateValue.isAfter(end, 'day')) return false;
         if (platform !== 'all' && !(task.platforms || []).includes(platform)) return false;
@@ -194,7 +201,7 @@
             (task) =>
               task.status === 'tamamlandi' &&
               task.completedAt &&
-              window.dayjs(task.completedAt).format('DD.MM.YYYY') === label
+              dayjs(task.completedAt).format('DD.MM.YYYY') === label
           ).length;
           days.push({ date: label, count });
           cursor = cursor.add(1, 'day');
@@ -229,11 +236,12 @@
           assigned: task.assignedTo || '-',
           status: task.status,
           dueDate: formatDate(task.dueDate),
-          completionDays: task.completedAt && task.createdAt
-            ? Math.round(
-                (new Date(task.completedAt) - new Date(task.createdAt)) / (1000 * 60 * 60 * 24)
-              )
-            : '-'
+          completionDays:
+            task.completedAt && task.createdAt
+              ? Math.round(
+                  (new Date(task.completedAt) - new Date(task.createdAt)) / (1000 * 60 * 60 * 24)
+                )
+              : '-'
         })),
       [searchedTasks]
     );
@@ -263,7 +271,7 @@
               row.dueDate,
               row.completionDays
             ]
-              .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+              .map((value) => `\"${String(value).replace(/\"/g, '\"\"')}\"`)
               .join(';')
           )
         )
@@ -276,25 +284,6 @@
       link.click();
       URL.revokeObjectURL(link.href);
     };
-
-    if (!chartsLib || !DataGrid) {
-      return React.createElement('div', null, 'Grafikler yüklenemedi.');
-    }
-
-    const {
-      ResponsiveContainer,
-      PieChart,
-      Pie,
-      Cell,
-      LineChart,
-      Line,
-      CartesianGrid,
-      XAxis,
-      YAxis,
-      Tooltip,
-      BarChart,
-      Bar
-    } = chartsLib;
 
     return React.createElement(
       Box,
@@ -334,35 +323,27 @@
             React.createElement(
               Grid,
               { item: true, xs: 12, md: 4 },
-              LocalizationProvider && DateRangePicker && AdapterDayjs
-                ? React.createElement(
-                    LocalizationProvider,
-                    { dateAdapter: AdapterDayjs },
-                    React.createElement(DateRangePicker, {
-                      value: dateRange,
-                      onChange: (newValue) => {
-                        setDateRange(newValue);
-                        setPreset('custom');
-                      },
-                      open: openRangePicker,
-                      onClose: () => setOpenRangePicker(false),
-                      onOpen: () => setOpenRangePicker(true),
-                      slotProps: {
-                        textField: {
-                          size: 'small',
-                          fullWidth: true,
-                          InputProps: { readOnly: true }
-                        }
-                      }
-                    })
-                  )
-                : React.createElement(TextField, {
-                    label: 'Tarih Aralığı',
-                    size: 'small',
-                    fullWidth: true,
-                    value: dateRange.map((item) => (item ? item.format('DD.MM.YYYY') : '')).join(' - '),
-                    InputProps: { readOnly: true }
-                  })
+              React.createElement(
+                LocalizationProvider,
+                { dateAdapter: AdapterDayjs },
+                React.createElement(DateRangePicker, {
+                  value: dateRange,
+                  onChange: (newValue) => {
+                    setDateRange(newValue);
+                    setPreset('custom');
+                  },
+                  open: openRangePicker,
+                  onClose: () => setOpenRangePicker(false),
+                  onOpen: () => setOpenRangePicker(true),
+                  slotProps: {
+                    textField: {
+                      size: 'small',
+                      fullWidth: true,
+                      InputProps: { readOnly: true }
+                    }
+                  }
+                })
+              )
             ),
             React.createElement(
               Grid,
@@ -511,26 +492,29 @@
               CardContent,
               null,
               React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600, gutterBottom: true }, 'Durum Dağılımı'),
-              React.createElement(
-                Box,
-                { height: 260 },
-                React.createElement(
-                  ResponsiveContainer,
-                  null,
-                  React.createElement(
-                    PieChart,
-                    null,
+              hasValue(chartData.statusDistribution)
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
                     React.createElement(
-                      Pie,
-                      { data: chartData.statusDistribution, dataKey: 'value', nameKey: 'name', outerRadius: 90 },
-                      chartData.statusDistribution.map((entry, index) =>
-                        React.createElement(Cell, { key: entry.name, fill: ['#f59e0b', '#3b82f6', '#ef4444', '#22c55e'][index % 4] })
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        PieChart,
+                        null,
+                        React.createElement(
+                          Pie,
+                          { data: chartData.statusDistribution, dataKey: 'value', nameKey: 'name', outerRadius: 90 },
+                          chartData.statusDistribution.map((entry, index) =>
+                            React.createElement(Cell, { key: entry.name, fill: ['#f59e0b', '#3b82f6', '#ef4444', '#22c55e'][index % 4] })
+                          )
+                        ),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Legend, null)
                       )
-                    ),
-                    React.createElement(Tooltip, null)
+                    )
                   )
-                )
-              )
+                : renderEmpty()
             )
           )
         ),
@@ -544,23 +528,25 @@
               CardContent,
               null,
               React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600, gutterBottom: true }, 'Günlük Tamamlanan'),
-              React.createElement(
-                Box,
-                { height: 260 },
-                React.createElement(
-                  ResponsiveContainer,
-                  null,
-                  React.createElement(
-                    LineChart,
-                    { data: chartData.days },
-                    React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                    React.createElement(XAxis, { dataKey: 'date' }),
-                    React.createElement(YAxis, null),
-                    React.createElement(Tooltip, null),
-                    React.createElement(Line, { type: 'monotone', dataKey: 'count', stroke: '#2563eb' })
+              hasValue(chartData.days, 'count')
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        LineChart,
+                        { data: chartData.days },
+                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                        React.createElement(XAxis, { dataKey: 'date' }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Line, { type: 'monotone', dataKey: 'count', stroke: '#2563eb' })
+                      )
+                    )
                   )
-                )
-              )
+                : renderEmpty()
             )
           )
         )
@@ -578,23 +564,25 @@
               CardContent,
               null,
               React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600, gutterBottom: true }, 'Platform Bazlı İş Yükü'),
-              React.createElement(
-                Box,
-                { height: 260 },
-                React.createElement(
-                  ResponsiveContainer,
-                  null,
-                  React.createElement(
-                    BarChart,
-                    { data: chartData.platformWorkload },
-                    React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                    React.createElement(XAxis, { dataKey: 'platform' }),
-                    React.createElement(YAxis, null),
-                    React.createElement(Tooltip, null),
-                    React.createElement(Bar, { dataKey: 'count', fill: '#22c55e' })
+              hasValue(chartData.platformWorkload, 'count')
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        BarChart,
+                        { data: chartData.platformWorkload },
+                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                        React.createElement(XAxis, { dataKey: 'platform' }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Bar, { dataKey: 'count', fill: '#22c55e' })
+                      )
+                    )
                   )
-                )
-              )
+                : renderEmpty()
             )
           )
         ),
@@ -612,23 +600,25 @@
                 { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 },
                 React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600 }, 'Influencer Bazlı İş Yükü (Top 10)')
               ),
-              React.createElement(
-                Box,
-                { height: 260 },
-                React.createElement(
-                  ResponsiveContainer,
-                  null,
-                  React.createElement(
-                    BarChart,
-                    { data: chartData.influencerWorkload },
-                    React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
-                    React.createElement(XAxis, { dataKey: 'influencer' }),
-                    React.createElement(YAxis, null),
-                    React.createElement(Tooltip, null),
-                    React.createElement(Bar, { dataKey: 'count', fill: '#f59e0b' })
+              hasValue(chartData.influencerWorkload, 'count')
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        BarChart,
+                        { data: chartData.influencerWorkload },
+                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                        React.createElement(XAxis, { dataKey: 'influencer' }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Bar, { dataKey: 'count', fill: '#f59e0b' })
+                      )
+                    )
                   )
-                )
-              )
+                : renderEmpty()
             )
           )
         )
@@ -710,6 +700,6 @@
     );
   };
 
-  ReactDOM.createRoot(document.getElementById('performanceApp')).render(React.createElement(PerformanceApp));
+  createRoot(document.getElementById('performanceApp')).render(React.createElement(PerformanceApp));
 </script>
 <%- include('partials/footer') %>

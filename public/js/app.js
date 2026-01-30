@@ -219,6 +219,8 @@ const newCategoryColorPreview = document.getElementById('newCategoryColorPreview
 const openColorPicker = document.getElementById('openColorPicker');
 const colorPickerDialog = document.getElementById('colorPickerDialog');
 const colorPickerInput = document.getElementById('colorPickerInput');
+const colorSwatchGrid = document.getElementById('colorSwatchGrid');
+const openCustomColor = document.getElementById('openCustomColor');
 const colorPickerPreview = document.getElementById('colorPickerPreview');
 const saveColorPick = document.getElementById('saveColorPick');
 const cancelColorPick = document.getElementById('cancelColorPick');
@@ -258,6 +260,9 @@ let categoryState = [];
 let originalCategoryState = [];
 let activeCategoriesState = [];
 let draftCategoryColor = newCategoryColor ? newCategoryColor.value : '#3B82F6';
+const swatchButtons = colorSwatchGrid
+  ? Array.from(colorSwatchGrid.querySelectorAll('.color-swatch-button'))
+  : [];
 
 const renderCategoryList = (listElement, categories, isActive) => {
   listElement.innerHTML = '';
@@ -447,6 +452,9 @@ const openColorDialog = () => {
   draftCategoryColor = newCategoryColor ? newCategoryColor.value : '#3B82F6';
   if (colorPickerInput) colorPickerInput.value = draftCategoryColor;
   if (colorPickerPreview) colorPickerPreview.style.background = draftCategoryColor;
+  swatchButtons.forEach((button) => {
+    button.classList.toggle('is-selected', button.dataset.color === draftCategoryColor);
+  });
   colorPickerDialog.classList.add('is-open');
   colorPickerDialog.setAttribute('aria-hidden', 'false');
 };
@@ -461,10 +469,29 @@ if (openColorPicker) {
   openColorPicker.addEventListener('click', openColorDialog);
 }
 
+if (openCustomColor && colorPickerInput) {
+  openCustomColor.addEventListener('click', () => {
+    colorPickerInput.click();
+  });
+}
+
+if (swatchButtons.length > 0) {
+  swatchButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      draftCategoryColor = button.dataset.color;
+      if (colorPickerPreview) colorPickerPreview.style.background = draftCategoryColor;
+      swatchButtons.forEach((item) => item.classList.toggle('is-selected', item === button));
+    });
+  });
+}
+
 if (colorPickerInput) {
   colorPickerInput.addEventListener('input', (event) => {
     draftCategoryColor = event.target.value;
     if (colorPickerPreview) colorPickerPreview.style.background = draftCategoryColor;
+    swatchButtons.forEach((button) => {
+      button.classList.toggle('is-selected', button.dataset.color === draftCategoryColor);
+    });
   });
 }
 
