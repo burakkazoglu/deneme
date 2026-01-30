@@ -1,0 +1,27 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Genel Ayarlar</h1>
+      <p>Marka ve sistem ayarlarını yönetin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Logo Ayarları</h2>
+    <form class="form-grid" action="/settings/general" method="POST">
+      <label>
+        Logo URL
+        <input type="text" name="logoUrl" value="<%= settings.logoUrl %>" required />
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="notificationsEnabled" <%= settings.notificationsEnabled ? 'checked' : '' %> />
+        Bildirimler aktif olsun
+      </label>
+      <button type="submit">Kaydet</button>
+    </form>
+  </section>
+</main>
+<%- include('partials/footer') %>

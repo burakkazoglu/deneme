@@ -1,0 +1,76 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Influencer Yönetimi</h1>
+      <p>Influencer listesi ve görev atamaları.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Yeni Influencer Ekle</h2>
+    <form class="form-grid" action="/influencers" method="POST">
+      <label>
+        Ad Soyad
+        <input type="text" name="fullName" required />
+      </label>
+      <label>
+        E-posta
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Şifre
+        <input type="password" name="password" required />
+      </label>
+      <button type="submit">Influencer Oluştur</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Influencer Listesi</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Görevler</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% influencers.forEach((influencer) => { %>
+            <tr>
+              <td><%= influencer.fullName %></td>
+              <td><%= influencer.email %></td>
+              <td>
+                <ul>
+                  <% influencer.tasks.forEach((task) => { %>
+                    <li><%= task.title %> (<%= task.status %>)</li>
+                  <% }) %>
+                </ul>
+              </td>
+              <td>
+                <form action="/influencers/<%= influencer._id %>/delete" method="POST" class="inline-form">
+                  <button type="submit" class="danger">Sil</button>
+                </form>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4">
+                <form action="/influencers/<%= influencer._id %>/tasks" method="POST" class="form-inline">
+                  <input type="text" name="title" placeholder="Yeni görev" required />
+                  <input type="date" name="dueDate" />
+                  <button type="submit">Görev Ata</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

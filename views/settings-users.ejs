@@ -1,0 +1,78 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main">
+  <header class="main__header">
+    <button class="menu-toggle" type="button" aria-label="Menüyü Aç/Kapat">☰</button>
+    <div>
+      <h1>Kullanıcılar</h1>
+      <p>Kullanıcı ekleyin veya çıkarın.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Yeni Kullanıcı Ekle</h2>
+    <form class="form-grid" action="/settings/users" method="POST">
+      <label>
+        Ad Soyad
+        <input type="text" name="fullName" required />
+      </label>
+      <label>
+        E-posta
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Şifre
+        <input type="password" name="password" required />
+      </label>
+      <label>
+        Rol
+        <select name="role" required>
+          <option value="admin">Admin</option>
+          <option value="influencer">Influencer</option>
+        </select>
+      </label>
+      <fieldset class="permissions">
+        <legend>Influencer Yetkileri</legend>
+        <label><input type="checkbox" name="permissions" value="influencers" /> Influencer Yönetimi</label>
+        <label><input type="checkbox" name="permissions" value="contentPlan" /> İçerik Planı</label>
+        <label><input type="checkbox" name="permissions" value="tasks" /> Görevler</label>
+        <label><input type="checkbox" name="permissions" value="ideas" /> Başlık / Post Fikirleri</label>
+        <label><input type="checkbox" name="permissions" value="reporting" /> Raporlama</label>
+      </fieldset>
+      <button type="submit">Kullanıcı Oluştur</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Kullanıcı Listesi</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Rol</th>
+            <th>Yetkiler</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach((user) => { %>
+            <tr>
+              <td><%= user.fullName %></td>
+              <td><%= user.email %></td>
+              <td><%= user.role %></td>
+              <td><%= user.permissions.join(', ') || '-' %></td>
+              <td>
+                <form action="/settings/users/<%= user._id %>/delete" method="POST" class="inline-form">
+                  <button type="submit" class="danger">Sil</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>
