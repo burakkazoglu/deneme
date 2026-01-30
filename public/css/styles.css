@@ -27,6 +27,40 @@ body {
   min-height: 100vh;
 }
 
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.05);
+}
+
+.appbar__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  gap: 16px;
+}
+
+.appbar__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.appbar__logout {
+  margin-left: auto;
+}
+
 .sidebar {
   background: var(--primary);
   color: #fff;
@@ -60,6 +94,11 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.nav-link--child {
+  padding-left: 4px;
+  font-size: 14px;
 }
 
 .nav-link.is-active {

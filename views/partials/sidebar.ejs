@@ -15,8 +15,9 @@
           <ul>
             <% item.children.forEach((child) => { %>
               <li>
-                <a class="<%= currentPath.startsWith(child.href) ? 'nav-link is-active' : 'nav-link' %>" href="<%= child.href %>">
-                  <%= child.label %>
+                <a class="<%= currentPath.startsWith(child.href) ? 'nav-link nav-link--child is-active' : 'nav-link nav-link--child' %>" href="<%= child.href %>">
+                  <span class="material-icons nav-icon">chevron_right</span>
+                  <span><%= child.label %></span>
                 </a>
               </li>
             <% }) %>
@@ -30,7 +31,4 @@
       <% } %>
     <% }) %>
   </nav>
-  <form action="/logout" method="POST" class="sidebar__logout">
-    <button type="submit">Çıkış Yap</button>
-  </form>
 </aside>

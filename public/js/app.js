@@ -126,10 +126,7 @@ if (calendarElement && window.calendarTasks && window.FullCalendar) {
       renderDayDetails(info.event.start, tasks);
     },
     eventDidMount(info) {
-      const task = info.event.extendedProps;
-      if (task && task.influencer) {
-        info.el.title = `${task.influencer}: ${task.title}`;
-      }
+      info.el.removeAttribute('title');
     },
     eventMouseEnter(info) {
       const task = info.event.extendedProps;
