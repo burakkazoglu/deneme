@@ -1,0 +1,719 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main main-container">
+  <div id="performanceApp"></div>
+</main>
+<link rel="stylesheet" href="https://unpkg.com/@mui/x-data-grid@7.0.0/umd/material-ui-x-data-grid.min.css" />
+<script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+      "@mui/material": "https://esm.sh/@mui/material@5.15.20",
+      "@mui/x-date-pickers-pro": "https://esm.sh/@mui/x-date-pickers-pro@6.20.2",
+      "@mui/x-date-pickers-pro/AdapterDayjs": "https://esm.sh/@mui/x-date-pickers-pro@6.20.2/AdapterDayjs",
+      "@mui/x-data-grid": "https://esm.sh/@mui/x-data-grid@7.0.0",
+      "dayjs": "https://esm.sh/dayjs@1.11.10",
+      "recharts": "https://esm.sh/recharts@2.12.2?deps=react@18.2.0,react-dom@18.2.0"
+    }
+  }
+</script>
+<script type="module">
+  import React, { useMemo, useState } from 'react';
+  import { createRoot } from 'react-dom/client';
+  import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    ToggleButtonGroup,
+    ToggleButton,
+    Stack,
+    Button,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Autocomplete,
+    Grid,
+    Divider,
+    Drawer,
+    Chip
+  } from '@mui/material';
+  import { LocalizationProvider, DateRangePicker } from '@mui/x-date-pickers-pro';
+  import { AdapterDayjs } from '@mui/x-date-pickers-pro/AdapterDayjs';
+  import { DataGrid } from '@mui/x-data-grid';
+  import dayjs from 'dayjs';
+  import {
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    LineChart,
+    Line,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    BarChart,
+    Bar,
+    Legend
+  } from 'recharts';
+
+  const initialTasks = <%- JSON.stringify(tasks || []) %>;
+  const influencers = <%- JSON.stringify(influencers || []) %>;
+  const users = <%- JSON.stringify(users || []) %>;
+
+  const statusOptions = [
+    { value: 'all', label: 'Tümü' },
+    { value: 'pending', label: 'Bekliyor' },
+    { value: 'in_progress', label: 'Devam Ediyor' },
+    { value: 'paused', label: 'Duraklatıldı' },
+    { value: 'done', label: 'Tamamlandı' }
+  ];
+
+  const statusMap = {
+    pending: 'bekliyor',
+    in_progress: 'devam_ediyor',
+    paused: 'duraklatildi',
+    done: 'tamamlandi'
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
+  const hasValue = (data, key = 'value') =>
+    Array.isArray(data) && data.some((item) => Number(item[key]) > 0);
+
+  const renderEmpty = () =>
+    React.createElement('div', { className: 'chart-empty' }, 'Veri yok');
+
+  const PerformanceApp = () => {
+    const [preset, setPreset] = useState('30');
+    const [dateRange, setDateRange] = useState([dayjs().subtract(29, 'day'), dayjs()]);
+    const [openRangePicker, setOpenRangePicker] = useState(false);
+    const [platform, setPlatform] = useState('all');
+    const [status, setStatus] = useState('all');
+    const [influencer, setInfluencer] = useState(null);
+    const [assignee, setAssignee] = useState('all');
+    const [search, setSearch] = useState('');
+    const [drawerTask, setDrawerTask] = useState(null);
+
+    const handlePresetChange = (_, value) => {
+      if (!value) return;
+      setPreset(value);
+      if (value === 'custom') {
+        setOpenRangePicker(true);
+        return;
+      }
+      if (value === 'week') {
+        setDateRange([dayjs().startOf('week'), dayjs()]);
+      }
+      if (value === 'month') {
+        setDateRange([dayjs().startOf('month'), dayjs()]);
+      }
+      if (value === '30') {
+        setDateRange([dayjs().subtract(29, 'day'), dayjs()]);
+      }
+    };
+
+    const clearFilters = () => {
+      setPreset('30');
+      setDateRange([dayjs().subtract(29, 'day'), dayjs()]);
+      setOpenRangePicker(false);
+      setPlatform('all');
+      setStatus('all');
+      setInfluencer(null);
+      setAssignee('all');
+      setSearch('');
+    };
+
+    const filteredTasks = useMemo(() => {
+      const [start, end] = dateRange;
+      return initialTasks.filter((task) => {
+        const taskDate = task.dueDate || task.createdAt;
+        const dateValue = taskDate ? dayjs(taskDate) : null;
+        if (start && dateValue && dateValue.isBefore(start, 'day')) return false;
+        if (end && dateValue && dateValue.isAfter(end, 'day')) return false;
+        if (platform !== 'all' && !(task.platforms || []).includes(platform)) return false;
+        if (status !== 'all' && task.status !== statusMap[status]) return false;
+        if (influencer && task.influencerName !== influencer.fullName) return false;
+        if (assignee !== 'all') {
+          const assignedName = task.assignedTo || '-';
+          if (assignedName !== assignee) return false;
+        }
+        return true;
+      });
+    }, [dateRange, platform, status, influencer, assignee]);
+
+    const searchedTasks = useMemo(() => {
+      if (!search) return filteredTasks;
+      const term = search.toLowerCase();
+      return filteredTasks.filter((task) =>
+        [
+          task.title,
+          task.taskType,
+          task.influencerName,
+          (task.platforms || []).join(', '),
+          task.status
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(term))
+      );
+    }, [filteredTasks, search]);
+
+    const kpi = useMemo(() => {
+      const now = new Date();
+      const total = filteredTasks.length;
+      const done = filteredTasks.filter((task) => task.status === 'tamamlandi').length;
+      const inProgress = filteredTasks.filter((task) =>
+        ['bekliyor', 'devam_ediyor'].includes(task.status)
+      ).length;
+      const overdue = filteredTasks.filter(
+        (task) => task.dueDate && new Date(task.dueDate) < now && task.status !== 'tamamlandi'
+      ).length;
+      const completed = filteredTasks
+        .filter((task) => task.completedAt && task.createdAt)
+        .map((task) => (new Date(task.completedAt) - new Date(task.createdAt)) / (1000 * 60 * 60 * 24));
+      const avg = completed.length
+        ? Math.round(completed.reduce((sum, value) => sum + value, 0) / completed.length)
+        : 0;
+      const median = completed.length
+        ? Math.round(
+            completed
+              .slice()
+              .sort((a, b) => a - b)[Math.floor(completed.length / 2)]
+          )
+        : 0;
+      return { total, done, inProgress, overdue, avg, median };
+    }, [filteredTasks]);
+
+    const chartData = useMemo(() => {
+      const statusDistribution = [
+        { name: 'Bekliyor', value: filteredTasks.filter((task) => task.status === 'bekliyor').length },
+        { name: 'Devam Ediyor', value: filteredTasks.filter((task) => task.status === 'devam_ediyor').length },
+        { name: 'Duraklatıldı', value: filteredTasks.filter((task) => task.status === 'duraklatildi').length },
+        { name: 'Tamamlandı', value: filteredTasks.filter((task) => task.status === 'tamamlandi').length }
+      ];
+
+      const [start, end] = dateRange;
+      const days = [];
+      if (start && end) {
+        let cursor = start.startOf('day');
+        const last = end.startOf('day');
+        while (cursor.isBefore(last) || cursor.isSame(last)) {
+          const label = cursor.format('DD.MM.YYYY');
+          const count = filteredTasks.filter(
+            (task) =>
+              task.status === 'tamamlandi' &&
+              task.completedAt &&
+              dayjs(task.completedAt).format('DD.MM.YYYY') === label
+          ).length;
+          days.push({ date: label, count });
+          cursor = cursor.add(1, 'day');
+        }
+      }
+
+      const platforms = ['Instagram', 'TikTok', 'YouTube', 'X'];
+      const platformWorkload = platforms.map((platformName) => ({
+        platform: platformName,
+        count: filteredTasks.filter((task) => (task.platforms || []).includes(platformName)).length
+      }));
+
+      const influencerWorkload = influencers
+        .map((inf) => ({
+          influencer: inf.fullName,
+          count: filteredTasks.filter((task) => task.influencerName === inf.fullName).length
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      return { statusDistribution, days, platformWorkload, influencerWorkload };
+    }, [filteredTasks, dateRange]);
+
+    const rows = useMemo(
+      () =>
+        searchedTasks.map((task) => ({
+          id: task.id,
+          startAt: formatDate(task.createdAt),
+          title: task.title,
+          influencer: task.influencerName,
+          platform: (task.platforms || []).join(', ') || '-',
+          assigned: task.assignedTo || '-',
+          status: task.status,
+          dueDate: formatDate(task.dueDate),
+          completionDays:
+            task.completedAt && task.createdAt
+              ? Math.round(
+                  (new Date(task.completedAt) - new Date(task.createdAt)) / (1000 * 60 * 60 * 24)
+                )
+              : '-'
+        })),
+      [searchedTasks]
+    );
+
+    const exportCsv = () => {
+      if (!rows.length) return;
+      const header = [
+        'Tarih',
+        'Başlık',
+        'Influencer',
+        'Platform',
+        'Atanan',
+        'Durum',
+        'DueDate',
+        'Tamamlanma Süresi'
+      ];
+      const csv = [header.join(';')]
+        .concat(
+          rows.map((row) =>
+            [
+              row.startAt,
+              row.title,
+              row.influencer,
+              row.platform,
+              row.assigned,
+              row.status,
+              row.dueDate,
+              row.completionDays
+            ]
+              .map((value) => `\"${String(value).replace(/\"/g, '\"\"')}\"`)
+              .join(';')
+          )
+        )
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'performans-raporu.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    };
+
+    return React.createElement(
+      Box,
+      { display: 'flex', flexDirection: 'column', gap: 3 },
+      React.createElement(
+        Card,
+        null,
+        React.createElement(
+          CardContent,
+          null,
+          React.createElement(
+            Box,
+            { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 },
+            React.createElement(
+              Box,
+              null,
+              React.createElement(Typography, { variant: 'h5', fontWeight: 600 }, 'Analiz / Rapor'),
+              React.createElement(
+                Typography,
+                { variant: 'body2', color: 'text.secondary' },
+                'Detaylı performans analizi ve filtrelenebilir raporlar.'
+              )
+            ),
+            React.createElement(
+              ToggleButtonGroup,
+              { value: preset, exclusive: true, onChange: handlePresetChange, size: 'small' },
+              React.createElement(ToggleButton, { value: 'week' }, 'Bu Hafta'),
+              React.createElement(ToggleButton, { value: 'month' }, 'Bu Ay'),
+              React.createElement(ToggleButton, { value: '30' }, 'Son 30 Gün'),
+              React.createElement(ToggleButton, { value: 'custom' }, 'Özel')
+            )
+          ),
+          React.createElement(Divider, { sx: { my: 2 } }),
+          React.createElement(
+            Grid,
+            { container: true, spacing: 2 },
+            React.createElement(
+              Grid,
+              { item: true, xs: 12, md: 4 },
+              React.createElement(
+                LocalizationProvider,
+                { dateAdapter: AdapterDayjs },
+                React.createElement(DateRangePicker, {
+                  value: dateRange,
+                  onChange: (newValue) => {
+                    setDateRange(newValue);
+                    setPreset('custom');
+                  },
+                  open: openRangePicker,
+                  onClose: () => setOpenRangePicker(false),
+                  onOpen: () => setOpenRangePicker(true),
+                  slotProps: {
+                    textField: {
+                      size: 'small',
+                      fullWidth: true,
+                      InputProps: { readOnly: true }
+                    }
+                  }
+                })
+              )
+            ),
+            React.createElement(
+              Grid,
+              { item: true, xs: 12, md: 2 },
+              React.createElement(
+                FormControl,
+                { fullWidth: true, size: 'small' },
+                React.createElement(InputLabel, null, 'Platform'),
+                React.createElement(
+                  Select,
+                  { value: platform, label: 'Platform', onChange: (e) => setPlatform(e.target.value) },
+                  React.createElement(MenuItem, { value: 'all' }, 'Tümü'),
+                  React.createElement(MenuItem, { value: 'Instagram' }, 'Instagram'),
+                  React.createElement(MenuItem, { value: 'TikTok' }, 'TikTok'),
+                  React.createElement(MenuItem, { value: 'YouTube' }, 'YouTube'),
+                  React.createElement(MenuItem, { value: 'X' }, 'X')
+                )
+              )
+            ),
+            React.createElement(
+              Grid,
+              { item: true, xs: 12, md: 2 },
+              React.createElement(
+                FormControl,
+                { fullWidth: true, size: 'small' },
+                React.createElement(InputLabel, null, 'Durum'),
+                React.createElement(
+                  Select,
+                  { value: status, label: 'Durum', onChange: (e) => setStatus(e.target.value) },
+                  statusOptions.map((option) =>
+                    React.createElement(MenuItem, { key: option.value, value: option.value }, option.label)
+                  )
+                )
+              )
+            ),
+            React.createElement(
+              Grid,
+              { item: true, xs: 12, md: 2 },
+              React.createElement(Autocomplete, {
+                options: influencers,
+                value: influencer,
+                onChange: (_, value) => setInfluencer(value),
+                getOptionLabel: (option) => option.fullName || '',
+                renderInput: (params) =>
+                  React.createElement(TextField, { ...params, label: 'Influencer', size: 'small' })
+              })
+            ),
+            React.createElement(
+              Grid,
+              { item: true, xs: 12, md: 2 },
+              React.createElement(
+                FormControl,
+                { fullWidth: true, size: 'small' },
+                React.createElement(InputLabel, null, 'Atanan Kişi'),
+                React.createElement(
+                  Select,
+                  { value: assignee, label: 'Atanan Kişi', onChange: (e) => setAssignee(e.target.value) },
+                  React.createElement(MenuItem, { value: 'all' }, 'Tümü'),
+                  users.map((user) =>
+                    React.createElement(MenuItem, { key: user._id, value: user.fullName }, user.fullName)
+                  )
+                )
+              )
+            ),
+            React.createElement(
+              Grid,
+              { item: true, xs: 12, md: 12 },
+              React.createElement(
+                Stack,
+                { direction: 'row', spacing: 2, justifyContent: 'flex-end' },
+                React.createElement(Button, { variant: 'outlined', onClick: clearFilters }, 'Temizle'),
+                React.createElement(Button, { variant: 'contained', onClick: () => setPreset(preset) }, 'Uygula')
+              )
+            )
+          )
+        )
+      ),
+      React.createElement(
+        Grid,
+        { container: true, spacing: 2 },
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 2 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(CardContent, null, React.createElement(Typography, { variant: 'body2' }, 'Toplam İş'), React.createElement(Typography, { variant: 'h5' }, kpi.total))
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 2 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(CardContent, null, React.createElement(Typography, { variant: 'body2' }, 'Tamamlanan'), React.createElement(Typography, { variant: 'h5' }, kpi.done))
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 2 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(CardContent, null, React.createElement(Typography, { variant: 'body2' }, 'Devam Eden'), React.createElement(Typography, { variant: 'h5' }, kpi.inProgress))
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 2 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(CardContent, null, React.createElement(Typography, { variant: 'body2' }, 'Geciken'), React.createElement(Typography, { variant: 'h5' }, kpi.overdue))
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 2 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(CardContent, null, React.createElement(Typography, { variant: 'body2' }, 'Ort. Tamamlanma (gün)'), React.createElement(Typography, { variant: 'h5' }, kpi.avg))
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 2 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(CardContent, null, React.createElement(Typography, { variant: 'body2' }, 'Medyan Tamamlanma'), React.createElement(Typography, { variant: 'h5' }, kpi.median))
+          )
+        )
+      ),
+      React.createElement(
+        Grid,
+        { container: true, spacing: 2 },
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 6 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(
+              CardContent,
+              null,
+              React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600, gutterBottom: true }, 'Durum Dağılımı'),
+              hasValue(chartData.statusDistribution)
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        PieChart,
+                        null,
+                        React.createElement(
+                          Pie,
+                          { data: chartData.statusDistribution, dataKey: 'value', nameKey: 'name', outerRadius: 90 },
+                          chartData.statusDistribution.map((entry, index) =>
+                            React.createElement(Cell, { key: entry.name, fill: ['#f59e0b', '#3b82f6', '#ef4444', '#22c55e'][index % 4] })
+                          )
+                        ),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Legend, null)
+                      )
+                    )
+                  )
+                : renderEmpty()
+            )
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 6 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(
+              CardContent,
+              null,
+              React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600, gutterBottom: true }, 'Günlük Tamamlanan'),
+              hasValue(chartData.days, 'count')
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        LineChart,
+                        { data: chartData.days },
+                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                        React.createElement(XAxis, { dataKey: 'date' }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Line, { type: 'monotone', dataKey: 'count', stroke: '#2563eb' })
+                      )
+                    )
+                  )
+                : renderEmpty()
+            )
+          )
+        )
+      ),
+      React.createElement(
+        Grid,
+        { container: true, spacing: 2 },
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 6 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(
+              CardContent,
+              null,
+              React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600, gutterBottom: true }, 'Platform Bazlı İş Yükü'),
+              hasValue(chartData.platformWorkload, 'count')
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        BarChart,
+                        { data: chartData.platformWorkload },
+                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                        React.createElement(XAxis, { dataKey: 'platform' }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Bar, { dataKey: 'count', fill: '#22c55e' })
+                      )
+                    )
+                  )
+                : renderEmpty()
+            )
+          )
+        ),
+        React.createElement(
+          Grid,
+          { item: true, xs: 12, md: 6 },
+          React.createElement(
+            Card,
+            null,
+            React.createElement(
+              CardContent,
+              null,
+              React.createElement(
+                Box,
+                { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 },
+                React.createElement(Typography, { variant: 'subtitle1', fontWeight: 600 }, 'Influencer Bazlı İş Yükü (Top 10)')
+              ),
+              hasValue(chartData.influencerWorkload, 'count')
+                ? React.createElement(
+                    Box,
+                    { height: 260 },
+                    React.createElement(
+                      ResponsiveContainer,
+                      null,
+                      React.createElement(
+                        BarChart,
+                        { data: chartData.influencerWorkload },
+                        React.createElement(CartesianGrid, { strokeDasharray: '3 3' }),
+                        React.createElement(XAxis, { dataKey: 'influencer' }),
+                        React.createElement(YAxis, null),
+                        React.createElement(Tooltip, null),
+                        React.createElement(Bar, { dataKey: 'count', fill: '#f59e0b' })
+                      )
+                    )
+                  )
+                : renderEmpty()
+            )
+          )
+        )
+      ),
+      React.createElement(
+        Card,
+        null,
+        React.createElement(
+          CardContent,
+          null,
+          React.createElement(
+            Box,
+            { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 },
+            React.createElement(Typography, { variant: 'h6' }, 'İş Detayları'),
+            React.createElement(
+              Stack,
+              { direction: 'row', spacing: 1 },
+              React.createElement(Button, { variant: 'outlined', onClick: exportCsv }, 'CSV İndir')
+            )
+          ),
+          React.createElement(
+            Box,
+            { mt: 2, mb: 2 },
+            React.createElement(TextField, {
+              label: 'Tabloda Ara',
+              size: 'small',
+              fullWidth: true,
+              value: search,
+              onChange: (e) => setSearch(e.target.value)
+            })
+          ),
+          React.createElement(
+            Box,
+            { height: 520 },
+            React.createElement(DataGrid, {
+              rows,
+              columns: [
+                { field: 'startAt', headerName: 'Tarih', flex: 1 },
+                { field: 'title', headerName: 'Başlık', flex: 1.5 },
+                { field: 'influencer', headerName: 'Influencer', flex: 1 },
+                { field: 'platform', headerName: 'Platform', flex: 1 },
+                { field: 'assigned', headerName: 'Atanan', flex: 1 },
+                { field: 'status', headerName: 'Durum', flex: 1 },
+                { field: 'dueDate', headerName: 'DueDate', flex: 1 },
+                { field: 'completionDays', headerName: 'Tamamlanma Süresi', flex: 1 }
+              ],
+              pageSizeOptions: [10, 25, 50],
+              initialState: {
+                pagination: { paginationModel: { pageSize: 10, page: 0 } }
+              },
+              onRowClick: (params) => setDrawerTask(params.row),
+              disableRowSelectionOnClick: true
+            })
+          )
+        )
+      ),
+      React.createElement(
+        Drawer,
+        { anchor: 'right', open: Boolean(drawerTask), onClose: () => setDrawerTask(null) },
+        drawerTask
+          ? React.createElement(
+              Box,
+              { width: 320, p: 3 },
+              React.createElement(Typography, { variant: 'h6', gutterBottom: true }, drawerTask.title),
+              React.createElement(Chip, { label: drawerTask.status, color: 'primary', size: 'small' }),
+              React.createElement(Typography, { variant: 'body2', mt: 2 }, `Influencer: ${drawerTask.influencer}`),
+              React.createElement(Typography, { variant: 'body2', mt: 1 }, `Platform: ${drawerTask.platform}`),
+              React.createElement(Typography, { variant: 'body2', mt: 1 }, `Atanan: ${drawerTask.assigned}`),
+              React.createElement(Typography, { variant: 'body2', mt: 1 }, `Başlangıç: ${drawerTask.startAt}`),
+              React.createElement(Typography, { variant: 'body2', mt: 1 }, `Bitiş: ${drawerTask.dueDate}`),
+              React.createElement(
+                Typography,
+                { variant: 'body2', mt: 1 },
+                `Tamamlanma Süresi: ${drawerTask.completionDays}`
+              )
+            )
+          : null
+      )
+    );
+  };
+
+  createRoot(document.getElementById('performanceApp')).render(React.createElement(PerformanceApp));
+</script>
+<%- include('partials/footer') %>

@@ -1,0 +1,22 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div>
+      <h1>Duyuru Panosu</h1>
+      <p>Admin duyurularını güncelleyin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Yeni Duyuru</h2>
+    <form class="form-grid" action="/settings/announcement" method="POST">
+      <label>
+        Duyuru Metni
+        <textarea name="announcementText" rows="4" required><%= settings.announcementText %></textarea>
+      </label>
+      <button type="submit">Kaydet</button>
+    </form>
+  </section>
+</main>
+<%- include('partials/footer') %>
