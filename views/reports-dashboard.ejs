@@ -1,0 +1,85 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div class="header-title">
+      <h1>Raporlar Dashboard</h1>
+      <p>Genel performans özeti</p>
+    </div>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <h3>Açık Görevler</h3>
+      <p><strong><%= openTasks %></strong></p>
+    </div>
+    <div class="card">
+      <h3>Bu Hafta Tamamlanan</h3>
+      <p><strong><%= doneThisWeek %></strong></p>
+    </div>
+    <div class="card">
+      <h3>Geciken Görevler</h3>
+      <p><strong><%= overdueTasks %></strong></p>
+    </div>
+    <div class="card">
+      <h3>Ortalama Tamamlanma (gün)</h3>
+      <p><strong><%= avgCompletionDays %></strong></p>
+    </div>
+  </section>
+
+  <section class="panel grid-two">
+    <div class="chart-card">
+      <h3>Görev Durumu Dağılımı</h3>
+      <div class="chart-placeholder">Pie Chart</div>
+    </div>
+    <div class="chart-card">
+      <h3>Son 14 Gün Tamamlanan Görev</h3>
+      <div class="chart-placeholder">Line Chart</div>
+    </div>
+  </section>
+
+  <section class="panel grid-two">
+    <div class="chart-card">
+      <h3>Platform Bazlı İş Yükü</h3>
+      <div class="chart-placeholder">Bar Chart</div>
+    </div>
+    <div class="chart-card">
+      <h3>Influencer Bazlı En Yoğun 5</h3>
+      <div class="chart-placeholder">Bar/List</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Yaklaşan İşler</h2>
+        <p>Filtre: durum + tarih aralığı</p>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Başlık</th>
+            <th>Influencer</th>
+            <th>Atanan Kişi</th>
+            <th>Durum</th>
+            <th>Platform</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>--</td>
+            <td>Örnek Görev</td>
+            <td>Influencer Demo</td>
+            <td>Admin Kullanıcı</td>
+            <td>Bekliyor</td>
+            <td>Instagram</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

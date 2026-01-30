@@ -1,0 +1,147 @@
+<%- include('partials/head') %>
+<%- include('partials/sidebar') %>
+<main class="main main-container">
+  <header class="main__header">
+    <div>
+      <h1>Yeni Influencer Ekle/Çıkar</h1>
+      <p>Influencer kayıtlarını yönetin.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Yeni Influencer Ekle</h2>
+        <p>Profil bilgilerini doldurun.</p>
+      </div>
+      <button type="button" class="ghost" data-modal-target="categoryModal">Kategori Yönetimi</button>
+    </div>
+    <form class="form-grid form-grid--four" action="/influencers/manage" method="POST">
+      <label>
+        Ad Soyad
+        <input type="text" name="fullName" required />
+      </label>
+      <label>
+        E-posta
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Şifre
+        <input type="password" name="password" required />
+      </label>
+      <label>
+        Kategori
+        <select name="category" required>
+          <option value="">Seçiniz</option>
+          <% categories.forEach((category) => { %>
+            <option value="<%= category.name %>"><%= category.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <fieldset class="permissions full-width">
+        <legend>Platformlar</legend>
+        <div class="platform-grid">
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="Instagram" class="chip-input" />
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/instagram.svg" alt="Instagram" />
+            <span>Instagram</span>
+            <span class="material-icons chip-check">check</span>
+          </label>
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="TikTok" class="chip-input" />
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/tiktok.svg" alt="TikTok" />
+            <span>TikTok</span>
+            <span class="material-icons chip-check">check</span>
+          </label>
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="YouTube" class="chip-input" />
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/youtube.svg" alt="YouTube" />
+            <span>YouTube</span>
+            <span class="material-icons chip-check">check</span>
+          </label>
+          <label class="chip-option">
+            <input type="checkbox" name="platforms" value="X" class="chip-input" />
+            <img class="chip-icon" src="https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/x.svg" alt="X" />
+            <span>X</span>
+            <span class="material-icons chip-check">check</span>
+          </label>
+        </div>
+      </fieldset>
+      <button type="submit">Influencer Oluştur</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Influencer Çıkar</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Kategori</th>
+            <th>Platformlar</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% influencers.forEach((influencer) => { %>
+            <tr>
+              <td><%= influencer.fullName %></td>
+              <td><%= influencer.email %></td>
+              <td><%= influencer.category || '-' %></td>
+              <td><%= influencer.platforms.join(', ') || '-' %></td>
+              <td>
+                <form action="/influencers/manage/<%= influencer._id %>/delete" method="POST" class="inline-form">
+                  <button type="submit" class="danger">Sil</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div class="modal" id="categoryModal" aria-hidden="true">
+    <div class="modal__content modal__content--wide">
+      <div class="modal__header">
+        <h3>Kategori Yönetimi</h3>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="category-toolbar">
+          <label>
+            Kategori Ara
+            <input type="text" id="categorySearch" placeholder="Kategori ara..." />
+          </label>
+        </div>
+        <div class="category-transfer" id="categoryTransfer">
+          <div class="category-panel">
+            <h4>Aktif Kategoriler</h4>
+            <div class="category-list" id="activeCategoryList"></div>
+          </div>
+          <div class="category-panel">
+            <h4>Pasif Kategoriler</h4>
+            <div class="category-list" id="inactiveCategoryList"></div>
+          </div>
+        </div>
+        <div class="category-new">
+          <label>
+            Yeni kategori adı
+            <input type="text" id="newCategoryName" placeholder="Örn: Yemek" />
+          </label>
+          <label>
+            Renk (opsiyonel)
+            <input type="color" id="newCategoryColor" value="#3B82F6" />
+          </label>
+          <button type="button" class="ghost" id="addCategoryButton">Ekle</button>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="ghost" id="cancelCategoryChanges">İptal</button>
+        <button type="button" id="saveCategoryChanges">Kaydet</button>
+      </div>
+    </div>
+  </div>
+</main>
+<%- include('partials/footer') %>
