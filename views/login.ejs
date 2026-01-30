@@ -28,7 +28,8 @@
       };
 
       const { useState } = React;
-      const { motion } = window.framerMotion;
+      const motionLib = window.framerMotion || window.FramerMotion || {};
+      const motion = motionLib.motion || (({ children }) => children);
       const {
         Box,
         Card,
