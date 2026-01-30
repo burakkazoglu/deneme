@@ -1,12 +1,13 @@
 :root {
   color-scheme: light;
-  font-family: "Inter", "Segoe UI", sans-serif;
-  --primary: #111827;
-  --accent: #22c55e;
+  font-family: "Roboto", "Segoe UI", sans-serif;
+  --primary: #1f2937;
+  --accent: #2563eb;
   --muted: #6b7280;
-  --bg: #f9fafb;
+  --bg: #f4f6fb;
   --panel: #ffffff;
-  --border: #e5e7eb;
+  --border: #e2e8f0;
+  --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -153,6 +154,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
+  box-shadow: var(--shadow);
 }
 
 .panel + .panel {
@@ -262,10 +264,13 @@ button.success {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 140px;
+  justify-content: center;
 }
 
 .status-icon {
-  font-size: 12px;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .status--pending {
@@ -387,6 +392,17 @@ button.success {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.calendar-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.calendar-controls label {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .calendar-nav {
@@ -529,6 +545,7 @@ button.success {
   border-radius: 16px;
   padding: 16px;
   min-width: 220px;
+  box-shadow: var(--shadow);
 }
 
 .announcement-panel h3 {
@@ -560,16 +577,19 @@ button.success {
   position: absolute;
   background: #111827;
   color: #fff;
-  padding: 6px 10px;
+  padding: 10px 14px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   pointer-events: none;
   z-index: 30;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.4;
+  min-width: 260px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
 }
 
 .fc {
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: "Roboto", "Segoe UI", sans-serif;
 }
 
 .fc .fc-toolbar-title {

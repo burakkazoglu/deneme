@@ -10,6 +10,8 @@ if (menuToggle && sidebar) {
 const calendarElement = document.getElementById('calendar');
 const calendarDetailContent = document.getElementById('calendarDetailContent');
 const calendarDetailEmpty = document.getElementById('calendarDetailEmpty');
+const calendarMonthSelect = document.getElementById('calendarMonth');
+const calendarYearSelect = document.getElementById('calendarYear');
 
 const statusLabelMap = {
   bekliyor: 'Bekliyor',
@@ -19,10 +21,10 @@ const statusLabelMap = {
 };
 
 const statusIconMap = {
-  bekliyor: '🟡',
-  devam_ediyor: '🔵',
-  duraklatildi: '⏸️',
-  tamamlandi: '✅'
+  bekliyor: 'hourglass_empty',
+  devam_ediyor: 'play_circle',
+  duraklatildi: 'pause_circle',
+  tamamlandi: 'check_circle'
 };
 
 const statusClassMap = {
@@ -75,14 +77,17 @@ const renderDayDetails = (date, tasks) => {
     const item = document.createElement('div');
     const statusClass = statusClassMap[task.status] || 'pending';
     const statusLabel = statusLabelMap[task.status] || task.status;
-    const statusIcon = statusIconMap[task.status] || '•';
+    const statusIcon = statusIconMap[task.status] || 'info';
     item.className = 'calendar-detail__item';
     item.innerHTML = `
       <div>
         <strong>${task.title}</strong>
         <div class="task-meta">${task.taskType} • ${task.influencer}</div>
       </div>
-      <span class="status status--${statusClass}"><span class="status-icon">${statusIcon}</span>${statusLabel}</span>
+      <span class="status status--${statusClass}">
+        <span class="material-icons status-icon">${statusIcon}</span>
+        ${statusLabel}
+      </span>
     `;
     calendarDetailContent.appendChild(item);
   });
@@ -131,11 +136,15 @@ if (calendarElement && window.calendarTasks && window.FullCalendar) {
       if (!task) return;
       const tooltip = document.createElement('div');
       tooltip.className = 'tooltip';
-      tooltip.textContent = `${task.influencer}: ${task.title}`;
       tooltip.id = `tooltip-${Date.now()}`;
+      tooltip.innerHTML = `
+        <strong>${task.title}</strong><br />
+        Influencer: ${task.influencer}<br />
+        Görev Türü: ${task.taskType}
+      `;
       document.body.appendChild(tooltip);
       const rect = info.el.getBoundingClientRect();
-      tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 8}px`;
+      tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 12}px`;
       tooltip.style.left = `${rect.left + window.scrollX}px`;
       info.el.dataset.tooltipId = tooltip.id;
     },
@@ -148,6 +157,55 @@ if (calendarElement && window.calendarTasks && window.FullCalendar) {
   calendar.render();
   const todayKey = new Date().toISOString().slice(0, 10);
   renderDayDetails(new Date(), tasksByDate[todayKey]);
+
+  if (calendarMonthSelect && calendarYearSelect) {
+    const months = [
+      'Ocak',
+      'Şubat',
+      'Mart',
+      'Nisan',
+      'Mayıs',
+      'Haziran',
+      'Temmuz',
+      'Ağustos',
+      'Eylül',
+      'Ekim',
+      'Kasım',
+      'Aralık'
+    ];
+    months.forEach((month, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = month;
+      calendarMonthSelect.appendChild(option);
+    });
+
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear - 3; year <= currentYear + 3; year += 1) {
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = year;
+      calendarYearSelect.appendChild(option);
+    }
+
+    const updateSelects = () => {
+      const date = calendar.getDate();
+      calendarMonthSelect.value = date.getMonth();
+      calendarYearSelect.value = date.getFullYear();
+    };
+
+    updateSelects();
+    calendar.on('datesSet', updateSelects);
+
+    const handleDateChange = () => {
+      const month = Number(calendarMonthSelect.value);
+      const year = Number(calendarYearSelect.value);
+      calendar.gotoDate(new Date(year, month, 1));
+    };
+
+    calendarMonthSelect.addEventListener('change', handleDateChange);
+    calendarYearSelect.addEventListener('change', handleDateChange);
+  }
 }
 
 const modalTriggers = document.querySelectorAll('[data-modal-target]');

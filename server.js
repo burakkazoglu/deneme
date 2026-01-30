@@ -78,11 +78,11 @@ const canAccess = (user, key) => {
 const buildNav = (user) => {
   if (!user) return [];
   const nav = [
-    { label: 'Anasayfa', href: '/', key: 'home', icon: '🏠' },
+    { label: 'Anasayfa', href: '/', key: 'home', icon: 'dashboard' },
     {
       label: 'Influencer Yönetimi',
       key: 'influencersGroup',
-      icon: '👥',
+      icon: 'groups',
       children: [
         { label: 'Influencer Listesi', href: '/influencers', key: 'influencers' },
         { label: 'Yeni Influencer Ekle/Çıkar', href: '/influencers/manage', key: 'influencerManage' }
@@ -91,7 +91,7 @@ const buildNav = (user) => {
     {
       label: 'İçerik & Görevler',
       key: 'contentGroup',
-      icon: '📝',
+      icon: 'assignment',
       children: [
         { label: 'İçerik Planı', href: '/content-plan', key: 'contentPlan' },
         { label: 'Görevler / To-Do', href: '/tasks', key: 'tasks' },
@@ -101,13 +101,13 @@ const buildNav = (user) => {
     {
       label: 'Raporlar',
       key: 'reportingGroup',
-      icon: '📊',
+      icon: 'insights',
       children: [{ label: 'Performans', href: '/performance', key: 'reporting' }]
     },
     {
       label: 'Ayarlar',
       key: 'settingsGroup',
-      icon: '⚙️',
+      icon: 'settings',
       children: [
         { label: 'Genel Ayarlar', href: '/settings/general', key: 'settings' },
         { label: 'Kullanıcılar', href: '/settings/users', key: 'settings' },

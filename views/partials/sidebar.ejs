@@ -9,7 +9,7 @@
       <% if (item.children) { %>
         <details class="nav-group" <%= isOpen ? 'open' : '' %>>
           <summary class="nav-group__title">
-            <span class="nav-icon"><%= item.icon %></span>
+            <span class="material-icons nav-icon"><%= item.icon %></span>
             <span><%= item.label %></span>
           </summary>
           <ul>
@@ -24,7 +24,7 @@
         </details>
       <% } else { %>
         <a class="<%= isActive ? 'nav-link is-active' : 'nav-link' %>" href="<%= item.href %>">
-          <span class="nav-icon"><%= item.icon %></span>
+          <span class="material-icons nav-icon"><%= item.icon %></span>
           <span><%= item.label %></span>
         </a>
       <% } %>
