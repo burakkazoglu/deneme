@@ -1,0 +1,24 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__logo">
+    <img src="<%= settings.logoUrl %>" alt="Influencer Planner Logo" />
+  </div>
+  <nav class="sidebar__nav">
+    <% navItems.forEach((item) => { %>
+      <% if (item.children) { %>
+        <details class="nav-group" open>
+          <summary class="nav-group__title"><%= item.label %></summary>
+          <ul>
+            <% item.children.forEach((child) => { %>
+              <li><a href="<%= child.href %>"><%= child.label %></a></li>
+            <% }) %>
+          </ul>
+        </details>
+      <% } else { %>
+        <a class="nav-link" href="<%= item.href %>"><%= item.label %></a>
+      <% } %>
+    <% }) %>
+  </nav>
+  <form action="/logout" method="POST" class="sidebar__logout">
+    <button type="submit">Çıkış Yap</button>
+  </form>
+</aside>
