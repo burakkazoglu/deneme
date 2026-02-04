@@ -11,20 +11,25 @@ const settingsSchema = new mongoose.Schema(
       default: true
     },
     taskTypes: {
-      type: [String],
+      type: [
+        {
+          name: { type: String, required: true },
+          isActive: { type: Boolean, default: true }
+        }
+      ],
       default: [
-        'Hook Ä°Ã§erik',
-        'Trend Ä°Ã§erik',
-        'Post Ä°Ã§erik',
-        'Anketli Post Ä°Ã§eriÄŸi',
-        'Reels',
-        'Story',
-        'Soru-Cevap Story'
+        { name: 'Hook Ýçerik', isActive: true },
+        { name: 'Trend Ýçerik', isActive: true },
+        { name: 'Post Ýçerik', isActive: true },
+        { name: 'Anketli Post Ýçeriði', isActive: true },
+        { name: 'Reels', isActive: true },
+        { name: 'Story', isActive: true },
+        { name: 'Soru-Cevap Story', isActive: true }
       ]
     },
     announcementText: {
       type: String,
-      default: 'Yeni duyuru eklemek iÃ§in ayarlara gidin.'
+      default: 'Yeni duyuru eklemek için ayarlara gidin.'
     }
   },
   { timestamps: true }

@@ -1,14 +1,10 @@
-<%- include('partials/head') %>
+﻿<%- include('partials/head') %>
 <%- include('partials/sidebar') %>
-<main class="main main-container">
+<main class="main main-container dashboard-main">
   <header class="main__header">
     <div class="header-title">
       <h1>Anasayfa</h1>
       <p>Hoş geldin, <strong><%= user.fullName %></strong>.</p>
-    </div>
-    <div class="announcement-panel">
-      <h3>Duyuru Panosu</h3>
-      <p><%= settings.announcementText %></p>
     </div>
   </header>
 
@@ -33,12 +29,18 @@
       <div id="calendar"></div>
     </div>
 
-    <aside class="panel calendar-detail">
-      <h2>Seçilen Gün Detayı</h2>
-      <div id="calendarDetailEmpty">
-        <p>Takvimden bir gün seçin.</p>
+    <aside class="dashboard-sidebar">
+      <div class="announcement-panel announcement-panel--dashboard">
+        <h3>Duyuru Panosu</h3>
+        <p><%= settings.announcementText %></p>
       </div>
-      <div id="calendarDetailContent" class="calendar-detail__content"></div>
+      <div class="panel calendar-detail">
+        <h2>Seçilen Gün Detayı</h2>
+        <div id="calendarDetailEmpty">
+          <p>Takvimden bir gün seçin.</p>
+        </div>
+        <div id="calendarDetailContent" class="calendar-detail__content"></div>
+      </div>
     </aside>
   </section>
 
@@ -80,3 +82,4 @@
     window.calendarTasks = <%- JSON.stringify(calendarTasks || []) %>;
   </script>
 <%- include('partials/footer') %>
+

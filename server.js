@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 
 const express = require('express');
 const session = require('express-session');
@@ -11,6 +11,7 @@ const fs = require('fs');
 
 const User = require('./models/User');
 const Settings = require('./models/Settings');
+const TaskType = require('./models/TaskType');
 const Category = require('./models/Category');
 
 const app = express();
@@ -18,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 
 mongoose.set('bufferCommands', false);
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/influencer_planner')
+  .connect(process.env.MONGODB_URI || 'mongodb://admin:12345Cs*@localhost:27017/influencer_planner?authSource=admin')
   .then(() => console.log('MongoDB connected'))
   .catch((error) => console.error('MongoDB connection error:', error));
 
@@ -28,6 +29,17 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return next();
+  }
+  if (req.path.includes('.')) {
+    return next();
+  }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  return next();
+});
 
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -51,7 +63,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/influencer_planner',
+      mongoUrl: process.env.MONGODB_URI || 'mongodb://admin:12345Cs*@localhost:27017/influencer_planner?authSource=admin',
       collectionName: 'sessions'
     }),
     cookie: {
@@ -63,9 +75,7 @@ app.use(
 const permissionMap = {
   influencers: '/influencers',
   influencerManage: '/influencers/manage',
-  contentPlan: '/content-plan',
   tasks: '/tasks',
-  ideas: '/ideas',
   reporting: '/reports/performance',
   settings: '/settings/general'
 };
@@ -95,9 +105,7 @@ const buildNav = (user) => {
       key: 'contentGroup',
       icon: 'assignment',
       children: [
-        { label: 'İçerik Planı', href: '/content-plan', key: 'contentPlan' },
-        { label: 'Görevler / To-Do', href: '/tasks', key: 'tasks' },
-        { label: 'Başlık / Post Fikirleri', href: '/ideas', key: 'ideas' }
+        { label: 'Görevler / To-Do', href: '/tasks', key: 'tasks' }
       ]
     },
     {
@@ -201,12 +209,60 @@ const statusClassMap = {
   tamamlandi: 'done'
 };
 
+const fixMojibake = (value) => {
+  if (typeof value !== 'string') return value;
+  const fixed = value
+    .replace(/Gï¿½rev Baï¿½lï¿½ï¿½ï¿½/g, 'GÃ¶rev BaÅŸlÄ±ÄŸÄ±')
+    .replace(/Baï¿½lï¿½k/g, 'BaÅŸlÄ±k')
+    .replace(/ÃƒÂ¶/g, 'Ã¶')
+    .replace(/Ãƒâ€“/g, 'Ã–')
+    .replace(/ÃƒÂ¼/g, 'Ã¼')
+    .replace(/ÃƒÅ“/g, 'Ãœ')
+    .replace(/ÃƒÂ§/g, 'Ã§')
+    .replace(/Ãƒâ€¡/g, 'Ã‡')
+    .replace(/Ã„Å¸/g, 'ÄŸ')
+    .replace(/Ã„Å¾/g, 'Ä')
+    .replace(/Ã„Â±/g, 'Ä±')
+    .replace(/Ã„Â°/g, 'Ä°')
+    .replace(/Ã…Å¸/g, 'ÅŸ')
+    .replace(/Ã…Å¾/g, 'Å');
+  if (!fixed.includes('ï¿½')) return fixed;
+  return fixed
+    .replace(/Hook ï¿½+erik/gi, 'Hook Ä°Ã§erik')
+    .replace(/Trend ï¿½+erik/gi, 'Trend Ä°Ã§erik')
+    .replace(/Post ï¿½+erik/gi, 'Post Ä°Ã§erik')
+    .replace(/Anketli Post ï¿½+eriï¿½+i/gi, 'Anketli Post Ä°Ã§eriÄŸi')
+    .replace(/Anketli Post ï¿½+erik/gi, 'Anketli Post Ä°Ã§erik')
+    .replace(/Soru-Cevap Story/gi, 'Soru-Cevap Story');
+};
+
+const defaultTaskTypes = [
+  'Hook İçerik',
+  'Trend İçerik',
+  'Post İçerik',
+  'Anketli Post İçeriği',
+  'Reels',
+  'Story',
+  'Soru-Cevap Story'
+];
+
+const normalizeTaskTypeName = (value) => {
+  const name = fixMojibake(value || '').trim();
+  return name ? name : null;
+};
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const normalizeCategoryName = (value) => {
+  const name = fixMojibake(value || '').trim();
+  return name ? name : null;
+};
+
 const loadSessionData = async (req, res, next) => {
   res.locals.currentUser = null;
   res.locals.settings = {
     logoUrl: '/public-logo.svg',
     notificationsEnabled: true,
-    taskTypes: [],
     announcementText: ''
   };
   try {
@@ -231,6 +287,31 @@ const loadSessionData = async (req, res, next) => {
 };
 
 app.use(loadSessionData);
+
+const migrateTaskTypesFromSettings = async () => {
+  const settings = await Settings.findOne();
+  if (!settings || !Array.isArray(settings.taskTypes) || settings.taskTypes.length === 0) return;
+  const names = settings.taskTypes
+    .map((item) => (typeof item === 'string' ? item : item?.name))
+    .map((item) => normalizeTaskTypeName(item))
+    .filter(Boolean);
+  if (names.length === 0) return;
+  const existing = await TaskType.find({ name: { $in: names } }).select('name');
+  const existingNames = new Set(existing.map((item) => item.name.toLowerCase()));
+  const seen = new Set();
+  const toInsert = names
+    .map((name) => name.trim())
+    .filter((name) => {
+      const key = name.toLowerCase();
+      if (seen.has(key) || existingNames.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((name) => ({ name, isActive: true }));
+  if (toInsert.length > 0) {
+    await TaskType.insertMany(toInsert);
+  }
+};
 
 const seedDefaultUsers = async () => {
   const count = await User.countDocuments();
@@ -280,9 +361,45 @@ const seedDefaultCategories = async () => {
   ]);
 };
 
+const seedDefaultTaskTypes = async () => {
+  const existing = await TaskType.find().select('name');
+  const existingNames = new Set(existing.map((item) => item.name.toLowerCase()));
+  const toInsert = defaultTaskTypes
+    .map((name) => normalizeTaskTypeName(name))
+    .filter(Boolean)
+    .filter((name) => !existingNames.has(name.toLowerCase()))
+    .map((name) => ({ name, isActive: true }));
+  if (toInsert.length > 0) {
+    await TaskType.insertMany(toInsert);
+  }
+};
+
+const migrateCategoryNames = async () => {
+  const categories = await Category.find().select('name');
+  if (!categories.length) return;
+  const updates = categories
+    .map((category) => {
+      const fixed = normalizeCategoryName(category.name);
+      if (!fixed || fixed === category.name) return null;
+      return {
+        updateOne: {
+          filter: { _id: category._id },
+          update: { $set: { name: fixed } }
+        }
+      };
+    })
+    .filter(Boolean);
+  if (updates.length > 0) {
+    await Category.bulkWrite(updates);
+  }
+};
+
 mongoose.connection.once('open', () => {
   seedDefaultUsers().catch((error) => console.error('Seed error:', error));
   seedDefaultCategories().catch((error) => console.error('Seed error:', error));
+  migrateCategoryNames().catch((error) => console.error('Category migration error:', error));
+  migrateTaskTypesFromSettings().catch((error) => console.error('Task type migration error:', error));
+  seedDefaultTaskTypes().catch((error) => console.error('Seed task types error:', error));
 });
 
 app.get('/login', (req, res) => {
@@ -294,17 +411,17 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return res.render('login', { error: 'Kullanıcı bulunamadı.' });
+      return res.render('login', { error: 'KullanÄ±cÄ± bulunamadÄ±.' });
     }
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) {
-      return res.render('login', { error: 'Şifre hatalı.' });
+      return res.render('login', { error: 'Åifre hatalÄ±.' });
     }
     req.session.userId = user._id;
     return res.redirect('/');
   } catch (error) {
     console.error('Login error:', error);
-    return res.render('login', { error: 'Veritabanına bağlanılamadı.' });
+    return res.render('login', { error: 'VeritabanÄ±na baÄŸlanÄ±lamadÄ±.' });
   }
 });
 
@@ -323,7 +440,7 @@ app.get('/', ensureAuth, async (req, res) => {
       influencer.tasks.map((task) => ({
         id: task._id,
         title: task.title,
-        taskType: task.taskType || 'Görev',
+        taskType: task.taskType || 'GÃ¶rev',
         status: task.status,
         dueDate: task.dueDate,
         influencer: influencer.fullName
@@ -333,7 +450,7 @@ app.get('/', ensureAuth, async (req, res) => {
     calendarTasks = user.tasks.map((task) => ({
       id: task._id,
       title: task.title,
-      taskType: task.taskType || 'Görev',
+      taskType: task.taskType || 'GÃ¶rev',
       status: task.status,
       dueDate: task.dueDate,
       influencer: user.fullName
@@ -350,7 +467,11 @@ app.get('/influencers', ensureAuth, ensurePermission('influencers'), async (req,
 app.get('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
   const influencers = await User.find({ role: 'influencer' });
   const categories = await Category.find({ isActive: true }).sort({ name: 1 });
-  res.render('influencers-manage', { influencers, categories });
+  const normalizedCategories = categories.map((category) => ({
+    ...category.toObject(),
+    name: fixMojibake(category.name)
+  }));
+  res.render('influencers-manage', { influencers, categories: normalizedCategories });
 });
 
 app.post('/influencers/manage', ensureAuth, ensurePermission('influencerManage'), async (req, res) => {
@@ -381,10 +502,10 @@ app.get('/api/categories', ensureAuth, ensurePermission('influencerManage'), asy
   const influencers = await User.find({ role: 'influencer' });
   const withCounts = categories.map((category) => ({
     id: category._id,
-    name: category.name,
+    name: fixMojibake(category.name),
     color: category.color,
     isActive: category.isActive,
-    influencerCount: influencers.filter((inf) => inf.category === category.name).length
+    influencerCount: influencers.filter((inf) => fixMojibake(inf.category) === fixMojibake(category.name)).length
   }));
   res.json(withCounts);
 });
@@ -393,7 +514,7 @@ app.post('/api/categories', ensureAuth, ensurePermission('influencerManage'), as
   const { name, color } = req.body;
   const trimmed = name ? name.trim() : '';
   if (!trimmed) {
-    return res.status(400).json({ error: 'Kategori adı gerekli.' });
+    return res.status(400).json({ error: 'Kategori adÄ± gerekli.' });
   }
   const exists = await Category.findOne({ name: trimmed });
   if (exists) {
@@ -431,18 +552,19 @@ app.patch('/api/categories/:id', ensureAuth, ensurePermission('influencerManage'
   return res.json({ id: category._id, name: category.name, isActive: category.isActive });
 });
 
-app.get('/content-plan', ensureAuth, ensurePermission('contentPlan'), (req, res) => {
-  res.render('content-plan');
-});
 
 app.get('/tasks', ensureAuth, ensurePermission('tasks'), async (req, res) => {
   const influencers = await User.find({ role: 'influencer' });
-  const taskTypes = res.locals.settings.taskTypes || [];
+  const taskTypes = (
+    await TaskType.find({ isActive: { $ne: false } }).sort({ createdAt: 1 })
+  )
+    .map((type) => fixMojibake(type.name))
+    .filter(Boolean);
   const allTasks = influencers.flatMap((influencer) =>
     influencer.tasks.map((task) => ({
       id: task._id,
       title: task.title,
-      taskType: task.taskType || 'Görev',
+      taskType: fixMojibake(task.taskType || 'GÃ¶rev'),
       status: task.status,
       dueDate: task.dueDate,
       influencerId: influencer._id,
@@ -482,17 +604,90 @@ app.post('/tasks/:userId/:taskId/status', ensureAuth, async (req, res) => {
   res.redirect('/');
 });
 
-app.post('/tasks/types', ensureAuth, ensurePermission('tasks'), async (req, res) => {
-  const { taskTypes } = req.body;
-  const list = Array.isArray(taskTypes) ? taskTypes : taskTypes ? [taskTypes] : [];
-  const sanitized = list.map((item) => item.trim()).filter(Boolean);
-  await Settings.findOneAndUpdate({}, { taskTypes: sanitized }, { upsert: true });
+app.post('/tasks/:userId/:taskId/delete', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  await User.updateOne(
+    { _id: req.params.userId },
+    { $pull: { tasks: { _id: req.params.taskId } } }
+  );
   res.redirect('/tasks');
 });
 
-app.get('/ideas', ensureAuth, ensurePermission('ideas'), (req, res) => {
-  res.render('ideas');
+app.post('/tasks/types', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const { taskTypes } = req.body;
+  const list = Array.isArray(taskTypes) ? taskTypes : taskTypes ? [taskTypes] : [];
+  const sanitized = list.map((item) => normalizeTaskTypeName(item)).filter(Boolean);
+  const unique = Array.from(new Set(sanitized.map((name) => name.toLowerCase())));
+  const names = unique.map((name) =>
+    sanitized.find((item) => item.toLowerCase() === name)
+  );
+  if (names.length > 0) {
+    const existing = await TaskType.find({ name: { $in: names } }).select('name');
+    const existingNames = new Set(existing.map((item) => item.name.toLowerCase()));
+    const toInsert = names
+      .filter((name) => !existingNames.has(name.toLowerCase()))
+      .map((name) => ({ name, isActive: true }));
+    if (toInsert.length > 0) {
+      await TaskType.insertMany(toInsert);
+    }
+    await TaskType.updateMany({ name: { $in: names } }, { $set: { isActive: true } });
+  }
+  res.redirect('/tasks');
 });
+
+app.get('/api/task-types', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const activeOnly = req.query.activeOnly === 'true';
+  const query = activeOnly ? { isActive: { $ne: false } } : {};
+  const items = await TaskType.find(query).sort({ createdAt: 1 });
+  res.json(
+    items.map((item) => ({
+      id: item._id,
+      name: fixMojibake(item.name),
+      isActive: item.isActive !== false
+    }))
+  );
+});
+
+app.post('/api/task-types', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const { name } = req.body;
+  const trimmed = normalizeTaskTypeName(name);
+  if (!trimmed) {
+    return res.status(400).json({ error: 'Başlık adı gerekli.' });
+  }
+  const safeName = trimmed;
+  const regex = new RegExp(`^${escapeRegex(safeName)}$`, 'i');
+  const exists = await TaskType.findOne({ name: regex });
+  if (exists) {
+    return res.status(409).json({ error: 'Başlık zaten mevcut.' });
+  }
+  const created = await TaskType.create({ name: safeName, isActive: true });
+  return res.json({ id: created._id, name: created.name, isActive: created.isActive !== false });
+});
+
+app.patch('/api/task-types/bulk', ensureAuth, ensurePermission('tasks'), async (req, res) => {
+  const { activateIds, deactivateIds } = req.body;
+  const activateList = Array.isArray(activateIds) ? activateIds : [];
+  const deactivateList = Array.isArray(deactivateIds) ? deactivateIds : [];
+  const isObjectId = (value) => String(value).match(/^[0-9a-fA-F]{24}$/);
+  const activateObjectIds = activateList.filter((id) => isObjectId(id));
+  const deactivateObjectIds = deactivateList.filter((id) => isObjectId(id));
+  const activateNames = activateList.filter((id) => !isObjectId(id));
+  const deactivateNames = deactivateList.filter((id) => !isObjectId(id));
+
+  if (deactivateObjectIds.length > 0) {
+    await TaskType.updateMany({ _id: { $in: deactivateObjectIds } }, { $set: { isActive: false } });
+  }
+  if (deactivateNames.length > 0) {
+    await TaskType.updateMany({ name: { $in: deactivateNames } }, { $set: { isActive: false } });
+  }
+  if (activateObjectIds.length > 0) {
+    await TaskType.updateMany({ _id: { $in: activateObjectIds } }, { $set: { isActive: true } });
+  }
+  if (activateNames.length > 0) {
+    await TaskType.updateMany({ name: { $in: activateNames } }, { $set: { isActive: true } });
+  }
+  return res.json({ success: true });
+});
+
 
 app.get('/reports/performance', ensureAuth, ensurePermission('reporting'), async (req, res) => {
   const influencers = await User.find({ role: 'influencer' });
@@ -501,7 +696,7 @@ app.get('/reports/performance', ensureAuth, ensurePermission('reporting'), async
     influencer.tasks.map((task) => ({
       id: task._id,
       title: task.title,
-      taskType: task.taskType || 'Görev',
+      taskType: task.taskType || 'GÃ¶rev',
       status: task.status,
       dueDate: task.dueDate,
       createdAt: task.createdAt,
@@ -550,8 +745,8 @@ app.get('/reports/dashboard', ensureAuth, ensurePermission('reporting'), async (
   const statusDistribution = [
     { name: 'Bekliyor', value: allTasks.filter((task) => task.status === 'bekliyor').length },
     { name: 'Devam Ediyor', value: allTasks.filter((task) => task.status === 'devam_ediyor').length },
-    { name: 'Duraklatıldı', value: allTasks.filter((task) => task.status === 'duraklatildi').length },
-    { name: 'Tamamlandı', value: allTasks.filter((task) => task.status === 'tamamlandi').length }
+    { name: 'DuraklatÄ±ldÄ±', value: allTasks.filter((task) => task.status === 'duraklatildi').length },
+    { name: 'TamamlandÄ±', value: allTasks.filter((task) => task.status === 'tamamlandi').length }
   ];
 
   const last14Days = Array.from({ length: 14 }).map((_, index) => {
@@ -668,3 +863,4 @@ app.post(
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+

@@ -1,5 +1,6 @@
-<%- include('partials/head') %>
+﻿<%- include('partials/head') %>
 <%- include('partials/sidebar') %>
+<link rel="stylesheet" href="/vendor/flatpickr.min.css" />
 <main class="main main-container">
   <header class="main__header">
     <div>
@@ -14,7 +15,7 @@
         <h2>Influencer Görev Atama</h2>
         <p>Görevleri influencerlara atayın.</p>
       </div>
-      <button type="button" class="ghost" data-modal-target="taskTypeModal">Başlıkları Düzenle</button>
+      <button type="button" data-modal-target="taskTypeModal">Başlıkları Düzenle</button>
     </div>
     <form class="form-grid" action="/tasks/assign" method="POST">
       <label>
@@ -23,7 +24,7 @@
       </label>
       <label>
         Görev Başlığı
-        <select name="taskType" required>
+        <select id="taskTypeSelect" name="taskType" required>
           <% taskTypes.forEach((type) => { %>
             <option value="<%= type %>"><%= type %></option>
           <% }) %>
@@ -38,8 +39,11 @@
         </select>
       </label>
       <label>
-        Tarih (dd.mm.yyyy)
-        <input type="date" name="dueDate" />
+        Tarih
+        <div class="date-input">
+          <input type="text" name="dueDate" class="js-task-date" />
+          <span class="material-icons date-input__icon">calendar_month</span>
+        </div>
       </label>
       <button type="submit">Görev Ata</button>
     </form>
@@ -56,6 +60,7 @@
             <th>Influencer</th>
             <th>Tarih</th>
             <th>Durum</th>
+            <th>İşlem</th>
           </tr>
         </thead>
         <tbody>
@@ -66,6 +71,13 @@
               <td><%= task.influencerName %></td>
               <td><%= formatDate(task.dueDate) %></td>
               <td><span class="status status--<%= statusClass(task.status) %>"><%= formatStatus(task.status) %></span></td>
+              <td>
+                <form action="/tasks/<%= task.influencerId %>/<%= task.id %>/delete" method="POST" class="inline-form js-delete-task">
+                  <button type="submit" class="danger small">
+                    Sil
+                  </button>
+                </form>
+              </td>
             </tr>
           <% }) %>
         </tbody>
@@ -74,26 +86,64 @@
   </section>
 
   <div class="modal" id="taskTypeModal" aria-hidden="true">
+    <div class="modal__content modal__content--wide">
+      <div class="modal__header">
+        <h3>Görev Başlıkları Yönetimi</h3>
+        <button type="button" class="modal__close" data-modal-close>✖</button>
+      </div>
+      <div class="modal__body">
+        <div class="category-new-card">
+          <div class="category-new-header">
+            <h4>Yeni Başlık</h4>
+            <p>Yeni görev başlığı ekleyin.</p>
+          </div>
+          <div class="category-new-fields">
+            <div class="category-new-row">
+              <label class="field">
+                Başlık adı
+                <input type="text" id="newTaskTypeName" placeholder="Örn: Reels" required />
+                <span class="field-helper" id="newTaskTypeHelper"></span>
+              </label>
+              <div class="category-new-actions">
+                <button type="button" id="addTaskTypeButton">Ekle</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="category-transfer" id="taskTypeTransfer">
+          <div class="category-panel">
+            <h4>Aktif Başlıklar</h4>
+            <div class="category-list" id="activeTaskTypeList"></div>
+          </div>
+          <div class="category-panel">
+            <h4>Pasif Başlıklar</h4>
+            <div class="category-list" id="inactiveTaskTypeList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="ghost" id="cancelTaskTypeChanges">İptal</button>
+        <button type="button" id="saveTaskTypeChanges">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="deleteTaskModal" aria-hidden="true">
     <div class="modal__content">
       <div class="modal__header">
-        <h3>Görev Başlıkları</h3>
-        <button type="button" class="modal__close" data-modal-close>✕</button>
+        <h3>Görev silinsin mi?</h3>
+        <button type="button" class="modal__close" data-modal-close>✖</button>
       </div>
-      <form action="/tasks/types" method="POST" id="taskTypeForm">
-        <div class="modal__body" id="taskTypeList">
-          <% taskTypes.forEach((type) => { %>
-            <label>
-              Başlık
-              <input type="text" name="taskTypes" value="<%= type %>" />
-            </label>
-          <% }) %>
-        </div>
-        <div class="modal__footer">
-          <button type="button" class="ghost" id="addTaskType">Yeni Başlık</button>
-          <button type="submit">Kaydet</button>
-        </div>
-      </form>
+      <div class="modal__body">
+        <p>Bu görev kalıcı olarak silinecek.</p>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="ghost" id="cancelDeleteTask">Vazgeç</button>
+        <button type="button" class="danger" id="confirmDeleteTask">Sil</button>
+      </div>
     </div>
   </div>
 </main>
+<script src="/vendor/flatpickr.min.js"></script>
+<script src="/vendor/flatpickr-tr.js"></script>
 <%- include('partials/footer') %>

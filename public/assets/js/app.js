@@ -92,7 +92,7 @@ const renderDayDetails = (date, tasks) => {
     item.innerHTML = `
       <div>
         <strong>${task.title}</strong>
-        <div class="task-meta">${task.taskType} • ${task.influencer}</div>
+        <div class="task-meta">${task.taskType} â€¢ ${task.influencer}</div>
       </div>
       <span class="status status--${statusClass}">
         <span class="material-icons status-icon">${statusIcon}</span>

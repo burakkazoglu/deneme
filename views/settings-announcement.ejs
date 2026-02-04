@@ -11,11 +11,13 @@
   <section class="panel">
     <h2>Yeni Duyuru</h2>
     <form class="form-grid" action="/settings/announcement" method="POST">
-      <label>
+      <label class="full-width">
         Duyuru Metni
         <textarea name="announcementText" rows="4" required><%= settings.announcementText %></textarea>
       </label>
-      <button type="submit">Kaydet</button>
+      <div class="form-actions announcement-actions full-width">
+        <button type="submit">Kaydet</button>
+      </div>
     </form>
   </section>
 </main>
